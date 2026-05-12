@@ -1,17 +1,20 @@
 --!strict
 
-export type DinosaurId = "starter-raptor" | "tri-horn" | "bronto-buddy" | "shadow-rex" | "golden-ptero"
-export type TrailId = "none" | "leaf-swirl" | "lava-spark" | "cosmic-comet"
-export type ZoneId = "starter-valley" | "jungle-grove" | "volcano-ridge" | "ancient-ruins"
-export type EggNestId = "starter-egg" | "valley-nest" | "jungle-nest" | "volcano-nest" | "ruins-nest"
-export type BerryNodeId = "cave-berry" | "path-berry-a" | "path-berry-b" | "valley-berry" | "jungle-berry"
-export type DinoMode = "Following" | "StoredInNest"
-export type GrowthStage = "Baby" | "Juvenile" | "Adult"
+export type DinosaurId = 
+	"velociraptor" | "triceratops" | "brachiosaurus" | "tyrannosaurus" | 
+	"pteranodon" | "stegosaurus" | "ankylosaurus" | "spinosaurus" | 
+	"parasaurolophus" | "dilophosaurus"
+
+export type GrowthStage = "Hatchling" | "Juvenile" | "Subadult" | "Adult"
+
+export type DinosaurTrait = 
+	"PackHunter" | "HerbivoreTank" | "ApexPredator" | "SwiftRunner" | 
+	"ArmoredPlates" | "SailThermoregulator" | "CrestDisplay" | "SemiAquatic"
 
 export type DinosaurDefinition = {
 	id: DinosaurId,
 	displayName: string,
-	rarity: "Common" | "Rare" | "Epic" | "Legendary",
+	rarity: "Common" | "Uncommon" | "Rare" | "Epic" | "Legendary",
 	weight: number,
 	eggsPerSecond: number,
 	color: Color3,
@@ -20,6 +23,12 @@ export type DinosaurDefinition = {
 	mountable: boolean,
 	movementBonus: number,
 	favoriteFood: string,
+	
+	-- Realistic stats
+	baseHealth: number,
+	baseDamage: number,
+	baseSpeed: number,
+	traits: { DinosaurTrait },
 }
 
 export type OwnedDinoRecord = {
@@ -29,7 +38,15 @@ export type OwnedDinoRecord = {
 	bornUnix: number,
 	mode: DinoMode,
 	colorVariant: string,
+	traits: { DinosaurTrait }?,  -- Added for persistence
 }
+
+-- Keep all your existing types below for compatibility
+export type TrailId = "none" | "leaf-swirl" | "lava-spark" | "cosmic-comet"
+export type ZoneId = "starter-valley" | "jungle-grove" | "volcano-ridge" | "ancient-ruins"
+export type EggNestId = "starter-egg" | "valley-nest" | "jungle-nest" | "volcano-nest" | "ruins-nest"
+export type BerryNodeId = "cave-berry" | "path-berry-a" | "path-berry-b" | "valley-berry" | "jungle-berry"
+export type DinoMode = "Following" | "StoredInNest"
 
 export type NestDefinition = {
 	level: number,
@@ -110,6 +127,7 @@ export type PublicOwnedDino = {
 	color: Color3,
 	mountable: boolean,
 	movementBonus: number,
+	traits: { DinosaurTrait }?,
 }
 
 export type PublicState = {
