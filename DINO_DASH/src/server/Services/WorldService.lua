@@ -308,6 +308,18 @@ local function buildDinoModelTemplates(): ()
 	ensureDinoTemplate(models, "StarterRaptor_Baby", 0.82, Color3.fromRGB(74, 222, 128))
 	ensureDinoTemplate(models, "StarterRaptor_Juvenile", 1.25, Color3.fromRGB(74, 222, 128))
 	ensureDinoTemplate(models, "StarterRaptor_Adult", 1.8, Color3.fromRGB(74, 222, 128))
+	ensureDinoTemplate(models, "TriHorn_Baby", 0.9, Color3.fromRGB(96, 165, 250))
+	ensureDinoTemplate(models, "TriHorn_Juvenile", 1.35, Color3.fromRGB(96, 165, 250))
+	ensureDinoTemplate(models, "TriHorn_Adult", 2.0, Color3.fromRGB(96, 165, 250))
+	ensureDinoTemplate(models, "BrontoBuddy_Baby", 0.95, Color3.fromRGB(168, 85, 247))
+	ensureDinoTemplate(models, "BrontoBuddy_Juvenile", 1.45, Color3.fromRGB(168, 85, 247))
+	ensureDinoTemplate(models, "BrontoBuddy_Adult", 2.1, Color3.fromRGB(168, 85, 247))
+	ensureDinoTemplate(models, "ShadowRex_Baby", 1.05, Color3.fromRGB(30, 41, 59))
+	ensureDinoTemplate(models, "ShadowRex_Juvenile", 1.55, Color3.fromRGB(30, 41, 59))
+	ensureDinoTemplate(models, "ShadowRex_Adult", 2.3, Color3.fromRGB(30, 41, 59))
+	ensureDinoTemplate(models, "GoldenPtero_Baby", 0.75, Color3.fromRGB(250, 204, 21))
+	ensureDinoTemplate(models, "GoldenPtero_Juvenile", 1.15, Color3.fromRGB(250, 204, 21))
+	ensureDinoTemplate(models, "GoldenPtero_Adult", 1.7, Color3.fromRGB(250, 204, 21))
 end
 
 local function createZoneGate(parent: Instance, gateId: string, displayName: string, position: Vector3, color: Color3, required: string): ()
@@ -329,9 +341,187 @@ local function createZoneGate(parent: Instance, gateId: string, displayName: str
 		color = Color3.fromRGB(15, 23, 42),
 		material = Enum.Material.ForceField,
 		transparency = 0.25,
+		canCollide = false,
 	})
 	door:SetAttribute("ZoneId", gateId)
 	ensurePrompt(door, "UnlockZonePrompt", "Unlock", displayName)
+end
+
+local function buildJungleZone(world: Folder): ()
+	ensurePart(world, {
+		name = "JungleZoneFloor",
+		size = Vector3.new(380, 10, 140),
+		position = Vector3.new(0, 1, 345),
+		color = Color3.fromRGB(21, 128, 61),
+		material = Enum.Material.Grass,
+	})
+	ensurePart(world, {
+		name = "JungleZoneBackWall",
+		size = Vector3.new(400, 60, 28),
+		position = Vector3.new(0, 22, 400),
+		color = Color3.fromRGB(34, 85, 45),
+		material = Enum.Material.Rock,
+	})
+	ensurePart(world, {
+		name = "JungleMistLayer",
+		size = Vector3.new(360, 2, 120),
+		position = Vector3.new(0, 7, 345),
+		color = Color3.fromRGB(134, 239, 172),
+		material = Enum.Material.SmoothPlastic,
+		transparency = 0.78,
+		canCollide = false,
+	})
+	local jungleSign = ensurePart(world, {
+		name = "JungleGroveSign",
+		size = Vector3.new(46, 10, 4),
+		position = Vector3.new(0, 22, 295),
+		color = Color3.fromRGB(21, 101, 52),
+		material = Enum.Material.WoodPlanks,
+	})
+	ensureLabel(jungleSign, "JUNGLE GROVE\nRarer egg nests await", Vector3.new(0, 12, 0))
+	local jungleTreePositions = {
+		Vector3.new(-90, 7, 308), Vector3.new(90, 7, 308),
+		Vector3.new(-148, 7, 330), Vector3.new(148, 7, 330),
+		Vector3.new(-58, 7, 355), Vector3.new(58, 7, 355),
+		Vector3.new(-118, 7, 368), Vector3.new(118, 7, 368),
+		Vector3.new(0, 7, 320), Vector3.new(-28, 7, 375),
+	}
+	for i, pos in jungleTreePositions do
+		createTree(world, i + 20, pos, 1.05 + (i % 3) * 0.2)
+	end
+	for vine = 1, 8 do
+		ensurePart(world, {
+			name = `JungleVine_{vine}`,
+			size = Vector3.new(1.4, 18 + (vine % 3) * 6, 1.4),
+			position = Vector3.new(-140 + vine * 38, 24 + (vine % 2) * 4, 310 + (vine % 4) * 20),
+			color = Color3.fromRGB(22, 163, 74),
+			material = Enum.Material.Grass,
+			canCollide = false,
+		})
+	end
+	createEggNest(world, "jungle-nest", "JUNGLE EGG NEST\nRare dino eggs", Vector3.new(-10, 8, 360), Color3.fromRGB(134, 239, 172), "Search")
+end
+
+local function buildVolcanoZone(world: Folder): ()
+	ensurePart(world, {
+		name = "VolcanoZoneFloor",
+		size = Vector3.new(180, 10, 260),
+		position = Vector3.new(-300, 1, 42),
+		color = Color3.fromRGB(28, 25, 23),
+		material = Enum.Material.Basalt,
+	})
+	ensurePart(world, {
+		name = "VolcanoLavaPool",
+		size = Vector3.new(88, 3, 54),
+		position = Vector3.new(-300, 7, 14),
+		color = Color3.fromRGB(234, 88, 12),
+		material = Enum.Material.Neon,
+		transparency = 0.28,
+		canCollide = false,
+	})
+	ensurePart(world, {
+		name = "VolcanoLavaSurface",
+		size = Vector3.new(92, 1, 58),
+		position = Vector3.new(-300, 8.2, 14),
+		color = Color3.fromRGB(254, 215, 170),
+		material = Enum.Material.Neon,
+		transparency = 0.62,
+		canCollide = false,
+	})
+	ensurePart(world, {
+		name = "VolcanoSmokePillar",
+		size = Vector3.new(24, 48, 24),
+		position = Vector3.new(-300, 32, -220),
+		color = Color3.fromRGB(50, 44, 40),
+		material = Enum.Material.SmoothPlastic,
+		transparency = 0.55,
+		canCollide = false,
+	})
+	for rock = 1, 7 do
+		ensurePart(world, {
+			name = `VolcanicBoulder_{rock}`,
+			size = Vector3.new(10 + (rock % 3) * 7, 14 + (rock % 2) * 8, 10 + (rock % 2) * 5),
+			position = Vector3.new(-258 + rock * 14, 11, 72 + (rock % 4) * 18),
+			color = Color3.fromRGB(38, 34, 30),
+			material = Enum.Material.Basalt,
+		})
+	end
+	local volcSign = ensurePart(world, {
+		name = "VolcanoRidgeSign",
+		size = Vector3.new(46, 10, 4),
+		position = Vector3.new(-250, 22, 48),
+		color = Color3.fromRGB(127, 29, 29),
+		material = Enum.Material.WoodPlanks,
+	})
+	ensureLabel(volcSign, "VOLCANO RIDGE\nLegendary dinos", Vector3.new(0, 12, 0))
+	createEggNest(world, "volcano-nest", "VOLCANO EGG NEST\nLegendary eggs", Vector3.new(-310, 8, 48), Color3.fromRGB(239, 68, 68), "Search")
+end
+
+local function buildRuinsZone(world: Folder): ()
+	ensurePart(world, {
+		name = "RuinsZoneFloor",
+		size = Vector3.new(180, 10, 260),
+		position = Vector3.new(300, 1, 42),
+		color = Color3.fromRGB(148, 148, 156),
+		material = Enum.Material.Cobblestone,
+	})
+	ensurePart(world, {
+		name = "RuinsCrystalPatch",
+		size = Vector3.new(66, 3, 44),
+		position = Vector3.new(305, 7.5, 52),
+		color = Color3.fromRGB(139, 92, 246),
+		material = Enum.Material.Neon,
+		transparency = 0.48,
+		canCollide = false,
+	})
+	ensurePart(world, {
+		name = "RuinsAncientArch",
+		size = Vector3.new(64, 14, 10),
+		position = Vector3.new(305, 50, 48),
+		color = Color3.fromRGB(212, 212, 216),
+		material = Enum.Material.Marble,
+	})
+	ensurePart(world, {
+		name = "RuinsArchLeftPillar",
+		size = Vector3.new(10, 52, 10),
+		position = Vector3.new(273, 34, 48),
+		color = Color3.fromRGB(212, 212, 216),
+		material = Enum.Material.Marble,
+	})
+	ensurePart(world, {
+		name = "RuinsArchRightPillar",
+		size = Vector3.new(10, 52, 10),
+		position = Vector3.new(337, 34, 48),
+		color = Color3.fromRGB(212, 212, 216),
+		material = Enum.Material.Marble,
+	})
+	for pillar = 1, 5 do
+		ensurePart(world, {
+			name = `RuinsInnerPillar_{pillar}`,
+			size = Vector3.new(9, 44 + (pillar % 2) * 16, 9),
+			position = Vector3.new(260 + pillar * 22, 30, 96 + (pillar % 3) * 20),
+			color = Color3.fromRGB(212, 212, 216),
+			material = Enum.Material.Marble,
+		})
+	end
+	ensurePart(world, {
+		name = "RuinsMosaicFloor",
+		size = Vector3.new(80, 1, 60),
+		position = Vector3.new(305, 7, -6),
+		color = Color3.fromRGB(251, 191, 36),
+		material = Enum.Material.SmoothPlastic,
+		transparency = 0.3,
+		canCollide = false,
+	})
+	local ruinsSign = ensurePart(world, {
+		name = "AncientRuinsSign",
+		size = Vector3.new(46, 10, 4),
+		position = Vector3.new(250, 22, 48),
+		color = Color3.fromRGB(88, 28, 135),
+		material = Enum.Material.WoodPlanks,
+	})
+	ensureLabel(ruinsSign, "ANCIENT RUINS\nRarest crystal eggs", Vector3.new(0, 12, 0))
+	createEggNest(world, "ruins-nest", "ANCIENT EGG NEST\nUltra rare eggs", Vector3.new(310, 8, 48), Color3.fromRGB(168, 85, 247), "Search")
 end
 
 function WorldService.build(): ()
@@ -462,6 +652,9 @@ function WorldService.build(): ()
 	createZoneGate(world, "jungle-grove", "JUNGLE GROVE", Vector3.new(0, 4, 285), Color3.fromRGB(22, 101, 52), "Nest Lv.2 + 250 eggs")
 	createZoneGate(world, "volcano-ridge", "VOLCANO RIDGE", Vector3.new(-235, 4, 48), Color3.fromRGB(127, 29, 29), "Nest Lv.4 + 4000 eggs")
 	createZoneGate(world, "ancient-ruins", "ANCIENT RUINS", Vector3.new(235, 4, 48), Color3.fromRGB(88, 28, 135), "Nest Lv.5 + 20000 eggs")
+	buildJungleZone(world)
+	buildVolcanoZone(world)
+	buildRuinsZone(world)
 
 	ensurePart(world, {
 		name = "FarVolcanoSilhouette",
