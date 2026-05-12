@@ -12,9 +12,10 @@ SECRET_MARKERS = ("KEY", "TOKEN", "SECRET", "COOKIE", "PASSWORD")
 
 
 def normalize_path(path: str | Path) -> Path:
-    """Translate Windows drive paths for WSL while preserving normal paths."""
+    """Translate Windows drive paths to WSL paths when running on Linux; keep as-is on Windows."""
+    import platform
     raw = str(path)
-    if len(raw) >= 3 and raw[1] == ":" and raw[2] in {"\\", "/"}:
+    if platform.system() != "Windows" and len(raw) >= 3 and raw[1] == ":" and raw[2] in {"\\", "/"}:
         drive = raw[0].lower()
         rest = raw[3:].replace("\\", "/")
         return Path(f"/mnt/{drive}/{rest}")

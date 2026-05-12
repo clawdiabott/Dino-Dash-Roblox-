@@ -47,9 +47,18 @@ def main() -> None:
     if not args.file:
         run_checked([args.rojo, "build", "default.project.json", "--output", str(build_file)], cwd=project_dir, dry_run=args.dry_run)
 
-    env = load_env_file(credentials_path)
-    require_keys(env, [target.api_key_env])
-    api_key = env[target.api_key_env]
+    api_key = os.environ.get(target.api_key_env, "")
+    if not api_key:
+        try:
+            env = load_env_file(credentials_path)
+            api_key = env.get(target.api_key_env, "")
+        except FileNotFoundError:
+            pass
+    if not api_key:
+        raise SystemExit(
+            f"API key '{target.api_key_env}' not found.\n"
+            f"Set it as an environment variable or add it to: {credentials_path}"
+        )
 
     if not args.yes and not args.dry_run:
         answer = input("Type PUBLISH to upload this place version to Roblox: ")
