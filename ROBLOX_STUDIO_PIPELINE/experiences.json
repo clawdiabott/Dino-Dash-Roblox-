@@ -1,0 +1,18 @@
+{
+  "targets": {
+    "claw-machine": {
+      "name": "Clawdia's Claw Machine",
+      "project_dir": "D:\\Openclaw\\CLAWDIAS-CLAWMACHINE",
+      "universe_id": "10135510431",
+      "place_id": "103982561389598",
+      "api_key_env": "ROBLOX_OPEN_CLOUD_API_KEY_CLAWMACHINE"
+    },
+    "dino-dash": {
+      "name": "Dino Dash",
+      "project_dir": "D:\\Openclaw\\DINO_DASH",
+      "universe_id": "10089814885",
+      "place_id": "121490965476892",
+      "api_key_env": "ROBLOX_OPEN_CLOUD_API_KEY_DINODASH"
+    }
+  }
+}

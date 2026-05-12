@@ -1,0 +1,3577 @@
+<roblox version="4">
+  <Item class="ReplicatedStorage" referent="0">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="1">
+      <Properties>
+        <string name="Name">Shared</string>
+      </Properties>
+      <Item class="ModuleScript" referent="2">
+        <Properties>
+          <string name="Name">GameConfig</string>
+          <string name="Source"><![CDATA[--!strict
+
+local Types = require(script.Parent.Types)
+
+type DinosaurDefinition = Types.DinosaurDefinition
+type NestDefinition = Types.NestDefinition
+type TrailDefinition = Types.TrailDefinition
+type ZoneDefinition = Types.ZoneDefinition
+type EggNestDefinition = Types.EggNestDefinition
+type BerryNodeDefinition = Types.BerryNodeDefinition
+type DinosaurId = Types.DinosaurId
+type TrailId = Types.TrailId
+type ZoneId = Types.ZoneId
+type EggNestId = Types.EggNestId
+type BerryNodeId = Types.BerryNodeId
+
+local GameConfig = {}
+
+GameConfig.SCHEMA_VERSION = 3
+GameConfig.STARTING_EGGS = 0
+GameConfig.BASE_HATCH_COST = 25
+GameConfig.HATCH_COST_GROWTH = 1.08
+GameConfig.MAX_OFFLINE_SECONDS = 60 * 60 * 4
+GameConfig.AUTOSAVE_SECONDS = 60
+GameConfig.INCOME_TICK_SECONDS = 1
+GameConfig.FEED_GROWTH_SECONDS = 60
+GameConfig.STARTING_BERRY_FOOD = 5
+
+GameConfig.DINOSAURS = {
+	{
+		id = "starter-raptor" :: DinosaurId,
+		displayName = "Starter Raptor",
+		rarity = "Common",
+		weight = 620,
+		eggsPerSecond = 1,
+		color = Color3.fromRGB(74, 222, 128),
+		modelName = "StarterRaptor",
+		growthSeconds = 240,
+		mountable = true,
+		movementBonus = 8,
+		favoriteFood = "Jungle Berries",
+	},
+	{
+		id = "tri-horn" :: DinosaurId,
+		displayName = "Tri-Horn",
+		rarity = "Rare",
+		weight = 250,
+		eggsPerSecond = 4,
+		color = Color3.fromRGB(96, 165, 250),
+		modelName = "TriHorn",
+		growthSeconds = 420,
+		mountable = true,
+		movementBonus = 6,
+		favoriteFood = "Palm Leaves",
+	},
+	{
+		id = "bronto-buddy" :: DinosaurId,
+		displayName = "Bronto Buddy",
+		rarity = "Epic",
+		weight = 95,
+		eggsPerSecond = 12,
+		color = Color3.fromRGB(168, 85, 247),
+		modelName = "BrontoBuddy",
+		growthSeconds = 720,
+		mountable = true,
+		movementBonus = 4,
+		favoriteFood = "Ancient Ferns",
+	},
+	{
+		id = "shadow-rex" :: DinosaurId,
+		displayName = "Shadow Rex",
+		rarity = "Legendary",
+		weight = 30,
+		eggsPerSecond = 42,
+		color = Color3.fromRGB(30, 41, 59),
+		modelName = "ShadowRex",
+		growthSeconds = 900,
+		mountable = true,
+		movementBonus = 10,
+		favoriteFood = "Volcanic Meat",
+	},
+	{
+		id = "golden-ptero" :: DinosaurId,
+		displayName = "Golden Ptero",
+		rarity = "Legendary",
+		weight = 5,
+		eggsPerSecond = 125,
+		color = Color3.fromRGB(250, 204, 21),
+		modelName = "GoldenPtero",
+		growthSeconds = 1_080,
+		mountable = true,
+		movementBonus = 12,
+		favoriteFood = "Sunfruit",
+	},
+} :: { DinosaurDefinition }
+
+GameConfig.NESTS = {
+	{ level = 1, upgradeCost = 100, capacity = 8, incomeMultiplier = 1, followSlots = 1, storedSlots = 3 },
+	{ level = 2, upgradeCost = 500, capacity = 16, incomeMultiplier = 1.25, followSlots = 2, storedSlots = 8 },
+	{ level = 3, upgradeCost = 2_500, capacity = 30, incomeMultiplier = 1.6, followSlots = 2, storedSlots = 14 },
+	{ level = 4, upgradeCost = 12_000, capacity = 50, incomeMultiplier = 2.1, followSlots = 3, storedSlots = 24 },
+	{ level = 5, upgradeCost = 60_000, capacity = 85, incomeMultiplier = 3, followSlots = 3, storedSlots = 40 },
+} :: { NestDefinition }
+
+GameConfig.ZONES = {
+	{ id = "starter-valley" :: ZoneId, displayName = "Starter Valley", requiredNestLevel = 1, unlockCost = 0 },
+	{ id = "jungle-grove" :: ZoneId, displayName = "Jungle Grove", requiredNestLevel = 2, unlockCost = 250 },
+	{ id = "volcano-ridge" :: ZoneId, displayName = "Volcano Ridge", requiredNestLevel = 4, unlockCost = 4_000 },
+	{ id = "ancient-ruins" :: ZoneId, displayName = "Ancient Ruins", requiredNestLevel = 5, unlockCost = 20_000 },
+} :: { ZoneDefinition }
+
+GameConfig.EGG_NESTS = {
+	{
+		id = "starter-egg" :: EggNestId,
+		displayName = "Starter Egg",
+		zoneId = "starter-valley" :: ZoneId,
+		dinoId = "starter-raptor" :: DinosaurId,
+		cooldownSeconds = 0,
+		oneTime = true,
+	},
+	{
+		id = "valley-nest" :: EggNestId,
+		displayName = "Valley Egg Nest",
+		zoneId = "starter-valley" :: ZoneId,
+		dinoId = nil,
+		cooldownSeconds = 20,
+		oneTime = false,
+	},
+	{
+		id = "jungle-nest" :: EggNestId,
+		displayName = "Jungle Egg Nest",
+		zoneId = "jungle-grove" :: ZoneId,
+		dinoId = nil,
+		cooldownSeconds = 45,
+		oneTime = false,
+	},
+	{
+		id = "volcano-nest" :: EggNestId,
+		displayName = "Volcano Egg Nest",
+		zoneId = "volcano-ridge" :: ZoneId,
+		dinoId = nil,
+		cooldownSeconds = 90,
+		oneTime = false,
+	},
+	{
+		id = "ruins-nest" :: EggNestId,
+		displayName = "Ancient Ruins Egg Nest",
+		zoneId = "ancient-ruins" :: ZoneId,
+		dinoId = nil,
+		cooldownSeconds = 150,
+		oneTime = false,
+	},
+} :: { EggNestDefinition }
+
+GameConfig.BERRY_NODES = {
+	{
+		id = "cave-berry" :: BerryNodeId,
+		displayName = "Nest Berry Bush",
+		zoneId = "starter-valley" :: ZoneId,
+		berriesGranted = 3,
+		cooldownSeconds = 30,
+	},
+	{
+		id = "path-berry-a" :: BerryNodeId,
+		displayName = "Path Berry Bush",
+		zoneId = "starter-valley" :: ZoneId,
+		berriesGranted = 2,
+		cooldownSeconds = 45,
+	},
+	{
+		id = "path-berry-b" :: BerryNodeId,
+		displayName = "Sunny Berry Bush",
+		zoneId = "starter-valley" :: ZoneId,
+		berriesGranted = 2,
+		cooldownSeconds = 45,
+	},
+	{
+		id = "valley-berry" :: BerryNodeId,
+		displayName = "Valley Berry Patch",
+		zoneId = "starter-valley" :: ZoneId,
+		berriesGranted = 4,
+		cooldownSeconds = 75,
+	},
+	{
+		id = "jungle-berry" :: BerryNodeId,
+		displayName = "Jungle Berry Patch",
+		zoneId = "jungle-grove" :: ZoneId,
+		berriesGranted = 7,
+		cooldownSeconds = 120,
+	},
+} :: { BerryNodeDefinition }
+
+GameConfig.TRAILS = {
+	{
+		id = "none" :: TrailId,
+		displayName = "No Trail",
+		cost = 0,
+		color = ColorSequence.new(Color3.new(1, 1, 1)),
+	},
+	{
+		id = "leaf-swirl" :: TrailId,
+		displayName = "Leaf Swirl",
+		cost = 750,
+		color = ColorSequence.new(Color3.fromRGB(34, 197, 94), Color3.fromRGB(190, 242, 100)),
+	},
+	{
+		id = "lava-spark" :: TrailId,
+		displayName = "Lava Spark",
+		cost = 3_500,
+		color = ColorSequence.new(Color3.fromRGB(239, 68, 68), Color3.fromRGB(251, 191, 36)),
+	},
+	{
+		id = "cosmic-comet" :: TrailId,
+		displayName = "Cosmic Comet",
+		cost = 15_000,
+		color = ColorSequence.new(Color3.fromRGB(99, 102, 241), Color3.fromRGB(236, 72, 153)),
+	},
+} :: { TrailDefinition }
+
+local totalWeight = 0
+for _, dino in GameConfig.DINOSAURS do
+	totalWeight += dino.weight
+end
+GameConfig.TOTAL_DINO_WEIGHT = totalWeight
+
+function GameConfig.getNest(level: number): NestDefinition
+	return GameConfig.NESTS[math.clamp(level, 1, #GameConfig.NESTS)]
+end
+
+function GameConfig.getNextNest(level: number): NestDefinition?
+	return GameConfig.NESTS[level + 1]
+end
+
+function GameConfig.getTrail(trailId: TrailId): TrailDefinition?
+	for _, trail in GameConfig.TRAILS do
+		if trail.id == trailId then
+			return trail
+		end
+	end
+	return nil
+end
+
+function GameConfig.getDinosaur(dinoId: DinosaurId): DinosaurDefinition?
+	for _, dino in GameConfig.DINOSAURS do
+		if dino.id == dinoId then
+			return dino
+		end
+	end
+	return nil
+end
+
+function GameConfig.getZone(zoneId: ZoneId): ZoneDefinition?
+	for _, zone in GameConfig.ZONES do
+		if zone.id == zoneId then
+			return zone
+		end
+	end
+	return nil
+end
+
+function GameConfig.getEggNest(nestId: EggNestId): EggNestDefinition?
+	for _, eggNest in GameConfig.EGG_NESTS do
+		if eggNest.id == nestId then
+			return eggNest
+		end
+	end
+	return nil
+end
+
+function GameConfig.getBerryNode(berryNodeId: BerryNodeId): BerryNodeDefinition?
+	for _, berryNode in GameConfig.BERRY_NODES do
+		if berryNode.id == berryNodeId then
+			return berryNode
+		end
+	end
+	return nil
+end
+
+function GameConfig.getHatchCost(hatchCount: number): number
+	return math.floor(GameConfig.BASE_HATCH_COST * (GameConfig.HATCH_COST_GROWTH ^ hatchCount))
+end
+
+function GameConfig.getGrowthStage(ageSeconds: number, growthSeconds: number): Types.GrowthStage
+	local progress = if growthSeconds <= 0 then 1 else ageSeconds / growthSeconds
+	if progress >= 1 then
+		return "Adult"
+	elseif progress >= 0.45 then
+		return "Juvenile"
+	end
+	return "Baby"
+end
+
+function GameConfig.rollDinosaur(rng: Random): DinosaurDefinition
+	local roll = rng:NextInteger(1, GameConfig.TOTAL_DINO_WEIGHT)
+	local running = 0
+	for _, dino in GameConfig.DINOSAURS do
+		running += dino.weight
+		if roll <= running then
+			return dino
+		end
+	end
+	return GameConfig.DINOSAURS[1]
+end
+
+return GameConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="3">
+        <Properties>
+          <string name="Name">Monetization</string>
+        </Properties>
+        <Item class="ModuleScript" referent="4">
+          <Properties>
+            <string name="Name">ProductConfig</string>
+            <string name="Source"><![CDATA[--!strict
+
+-- Fill these IDs only after creating the real Roblox products/passes.
+-- Keep authoritative grants on the server in ReceiptProcessor; never grant from the client.
+local ProductConfig = {}
+
+ProductConfig.DEVELOPER_PRODUCTS = {
+	SmallEggPack = {
+		productId = 0,
+		displayName = "Small Egg Pack",
+		eggs = 1_000,
+	},
+	MegaEggPack = {
+		productId = 0,
+		displayName = "Mega Egg Pack",
+		eggs = 12_000,
+	},
+} :: { [string]: { productId: number, displayName: string, eggs: number } }
+
+ProductConfig.GAME_PASSES = {
+	VipNest = {
+		passId = 0,
+		displayName = "VIP Nest Cosmetics",
+	},
+} :: { [string]: { passId: number, displayName: string } }
+
+return ProductConfig
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="Folder" referent="5">
+        <Properties>
+          <string name="Name">Network</string>
+        </Properties>
+        <Item class="ModuleScript" referent="6">
+          <Properties>
+            <string name="Name">RemoteRegistry</string>
+            <string name="Source"><![CDATA[--!strict
+
+export type RemoteDefinition = {
+	name: string,
+	kind: "RemoteEvent" | "RemoteFunction",
+	maxCalls: number,
+	windowSeconds: number,
+}
+
+local RemoteRegistry = {}
+
+RemoteRegistry.FOLDER_NAME = "DinoDashRemotes"
+
+RemoteRegistry.REMOTES = {
+	Action = {
+		name = "Action",
+		kind = "RemoteEvent",
+		maxCalls = 10,
+		windowSeconds = 3,
+	},
+	State = {
+		name = "State",
+		kind = "RemoteEvent",
+		maxCalls = 120,
+		windowSeconds = 60,
+	},
+	RequestState = {
+		name = "RequestState",
+		kind = "RemoteFunction",
+		maxCalls = 5,
+		windowSeconds = 10,
+	},
+} :: { [string]: RemoteDefinition }
+
+return RemoteRegistry
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="Folder" referent="7">
+        <Properties>
+          <string name="Name">Security</string>
+        </Properties>
+        <Item class="ModuleScript" referent="8">
+          <Properties>
+            <string name="Name">RateLimiter</string>
+            <string name="Source"><![CDATA[--!strict
+
+local Players = game:GetService("Players")
+
+export type Result = {
+	allowed: boolean,
+	retryAfter: number,
+}
+
+type Bucket = {
+	windowStart: number,
+	count: number,
+}
+
+type PlayerBuckets = { [string]: Bucket }
+
+local RateLimiter = {}
+RateLimiter.__index = RateLimiter
+
+export type RateLimiter = typeof(setmetatable({} :: {
+	_buckets: { [number]: PlayerBuckets },
+}, RateLimiter))
+
+function RateLimiter.new(): RateLimiter
+	local self = setmetatable({
+		_buckets = {},
+	}, RateLimiter)
+
+	Players.PlayerRemoving:Connect(function(player: Player)
+		self._buckets[player.UserId] = nil
+	end)
+
+	return self
+end
+
+function RateLimiter.check(self: RateLimiter, player: Player, action: string, maxCalls: number, windowSeconds: number): Result
+	assert(maxCalls > 0, "maxCalls must be > 0")
+	assert(windowSeconds > 0, "windowSeconds must be > 0")
+
+	local now = os.clock()
+	local userBuckets = self._buckets[player.UserId]
+	if userBuckets == nil then
+		userBuckets = {}
+		self._buckets[player.UserId] = userBuckets
+	end
+
+	local bucket = userBuckets[action]
+	if bucket == nil or now - bucket.windowStart >= windowSeconds then
+		userBuckets[action] = {
+			windowStart = now,
+			count = 1,
+		}
+		return { allowed = true, retryAfter = 0 }
+	end
+
+	if bucket.count >= maxCalls then
+		return {
+			allowed = false,
+			retryAfter = math.max(0, windowSeconds - (now - bucket.windowStart)),
+		}
+	end
+
+	bucket.count += 1
+	return { allowed = true, retryAfter = 0 }
+end
+
+return RateLimiter
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="9">
+          <Properties>
+            <string name="Name">RemoteValidator</string>
+            <string name="Source"><![CDATA[--!strict
+
+local RemoteValidator = {}
+
+type PrimitiveType = "string" | "number" | "boolean" | "table" | "Instance" | "Vector3" | "CFrame"
+
+export type FieldRule = {
+	type: PrimitiveType,
+	required: boolean?,
+	min: number?,
+	max: number?,
+	maxLength: number?,
+}
+
+export type Schema = { [string]: FieldRule }
+
+local function typeOf(value: any): string
+	return typeof(value)
+end
+
+function RemoteValidator.validateTable(payload: any, schema: Schema): (boolean, string?)
+	if typeOf(payload) ~= "table" then
+		return false, "payload must be a table"
+	end
+
+	for fieldName, rule in pairs(schema) do
+		local value = payload[fieldName]
+		if value == nil then
+			if rule.required == true then
+				return false, `{fieldName} is required`
+			end
+			continue
+		end
+
+		if typeOf(value) ~= rule.type then
+			return false, `{fieldName} must be {rule.type}`
+		end
+
+		if rule.type == "number" then
+			local numberValue = value :: number
+			if rule.min ~= nil and numberValue < rule.min then
+				return false, `{fieldName} is below minimum`
+			end
+			if rule.max ~= nil and numberValue > rule.max then
+				return false, `{fieldName} is above maximum`
+			end
+		elseif rule.type == "string" then
+			local stringValue = value :: string
+			if rule.maxLength ~= nil and #stringValue > rule.maxLength then
+				return false, `{fieldName} is too long`
+			end
+		end
+	end
+
+	return true, nil
+end
+
+return RemoteValidator
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="ModuleScript" referent="10">
+        <Properties>
+          <string name="Name">Types</string>
+          <string name="Source"><![CDATA[--!strict
+
+export type DinosaurId = "starter-raptor" | "tri-horn" | "bronto-buddy" | "shadow-rex" | "golden-ptero"
+export type TrailId = "none" | "leaf-swirl" | "lava-spark" | "cosmic-comet"
+export type ZoneId = "starter-valley" | "jungle-grove" | "volcano-ridge" | "ancient-ruins"
+export type EggNestId = "starter-egg" | "valley-nest" | "jungle-nest" | "volcano-nest" | "ruins-nest"
+export type BerryNodeId = "cave-berry" | "path-berry-a" | "path-berry-b" | "valley-berry" | "jungle-berry"
+export type DinoMode = "Following" | "StoredInNest"
+export type GrowthStage = "Baby" | "Juvenile" | "Adult"
+
+export type DinosaurDefinition = {
+	id: DinosaurId,
+	displayName: string,
+	rarity: "Common" | "Rare" | "Epic" | "Legendary",
+	weight: number,
+	eggsPerSecond: number,
+	color: Color3,
+	modelName: string,
+	growthSeconds: number,
+	mountable: boolean,
+	movementBonus: number,
+	favoriteFood: string,
+}
+
+export type OwnedDinoRecord = {
+	uid: string,
+	id: DinosaurId,
+	ageSeconds: number,
+	bornUnix: number,
+	mode: DinoMode,
+	colorVariant: string,
+}
+
+export type NestDefinition = {
+	level: number,
+	upgradeCost: number,
+	capacity: number,
+	incomeMultiplier: number,
+	followSlots: number,
+	storedSlots: number,
+}
+
+export type TrailDefinition = {
+	id: TrailId,
+	displayName: string,
+	cost: number,
+	color: ColorSequence,
+}
+
+export type ZoneDefinition = {
+	id: ZoneId,
+	displayName: string,
+	requiredNestLevel: number,
+	unlockCost: number,
+}
+
+export type EggNestDefinition = {
+	id: EggNestId,
+	displayName: string,
+	zoneId: ZoneId,
+	dinoId: DinosaurId?,
+	cooldownSeconds: number,
+	oneTime: boolean,
+}
+
+export type BerryNodeDefinition = {
+	id: BerryNodeId,
+	displayName: string,
+	zoneId: ZoneId,
+	berriesGranted: number,
+	cooldownSeconds: number,
+}
+
+export type PlayerDino = {
+	id: DinosaurId,
+	count: number,
+}
+
+export type PlayerData = {
+	schemaVersion: number,
+	eggs: number,
+	nestLevel: number,
+	hatchCount: number,
+	dinos: { [DinosaurId]: number },
+	ownedTrails: { [TrailId]: boolean },
+	equippedTrail: TrailId,
+	lastSaveUnix: number,
+	starterEggClaimed: boolean,
+	followingDinoId: DinosaurId?,
+	dinoModes: { [DinosaurId]: DinoMode },
+	unlockedZones: { [ZoneId]: boolean },
+	nestCooldowns: { [EggNestId]: number },
+	berryCooldowns: { [BerryNodeId]: number },
+	processedReceipts: { [string]: boolean },
+	ownedDinos: { [string]: OwnedDinoRecord },
+	nextDinoUid: number,
+	activeDinoUid: string?,
+	mountedDinoUid: string?,
+	berryFood: number,
+}
+
+export type PublicOwnedDino = {
+	uid: string,
+	id: string,
+	displayName: string,
+	ageSeconds: number,
+	growthSeconds: number,
+	stage: string,
+	mode: string,
+	color: Color3,
+	mountable: boolean,
+	movementBonus: number,
+}
+
+export type PublicState = {
+	eggs: number,
+	nestLevel: number,
+	nestCapacity: number,
+	followSlots: number,
+	storedSlots: number,
+	incomePerSecond: number,
+	hatchCost: number,
+	dinos: { [string]: number },
+	ownedTrails: { [string]: boolean },
+	equippedTrail: string,
+	starterEggClaimed: boolean,
+	followingDinoId: string?,
+	activeDinoUid: string?,
+	mountedDinoUid: string?,
+	isMounted: boolean,
+	berryFood: number,
+	ownedDinos: { PublicOwnedDino },
+	berryCooldowns: { [string]: number },
+	dinoModes: { [string]: string },
+	unlockedZones: { [string]: boolean },
+	objective: string,
+}
+
+return nil
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="11">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Folder" referent="12">
+      <Properties>
+        <string name="Name">Server</string>
+      </Properties>
+      <Item class="Script" referent="13">
+        <Properties>
+          <string name="Name">EmergencyWorld</string>
+          <token name="RunContext">0</token>
+          <string name="Source"><![CDATA[--!strict
+
+-- Zero-dependency safety bootstrap.
+-- This runs independently of Main.server.lua so players always have a physical spawn platform
+-- even if another gameplay service fails during startup.
+
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local WORLD_FOLDER_NAME = "DinoDashWorld"
+
+local function getWorldFolder(): Folder
+	local existing = Workspace:FindFirstChild(WORLD_FOLDER_NAME)
+	if existing ~= nil and existing:IsA("Folder") then
+		return existing
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = WORLD_FOLDER_NAME
+	folder.Parent = Workspace
+	return folder
+end
+
+local function ensurePart(parent: Instance, name: string, size: Vector3, position: Vector3, color: Color3, material: Enum.Material): BasePart
+	local existing = parent:FindFirstChild(name)
+	if existing ~= nil and existing:IsA("BasePart") then
+		return existing
+	end
+
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Anchored = true
+	part.Size = size
+	part.Position = position
+	part.Color = color
+	part.Material = material
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Parent = parent
+	return part
+end
+
+local function ensureSpawn(parent: Instance): SpawnLocation
+	local existing = parent:FindFirstChild("DinoDashSpawn")
+	if existing ~= nil and existing:IsA("SpawnLocation") then
+		return existing
+	end
+
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "DinoDashSpawn"
+	spawn.Anchored = true
+	spawn.Size = Vector3.new(18, 1, 18)
+	spawn.Position = Vector3.new(0, 8, 0)
+	spawn.Color = Color3.fromRGB(250, 204, 21)
+	spawn.Material = Enum.Material.Neon
+	spawn.Neutral = true
+	spawn.AllowTeamChangeOnTouch = false
+	spawn.Duration = 0
+	spawn.Parent = parent
+	return spawn
+end
+
+local world = getWorldFolder()
+Workspace.FallenPartsDestroyHeight = -500
+
+pcall(function()
+	Lighting.ClockTime = 14
+	Lighting.Brightness = 2
+end)
+
+ensurePart(world, "EmergencyDinoDashIsland", Vector3.new(220, 8, 220), Vector3.new(0, 0, 0), Color3.fromRGB(74, 222, 128), Enum.Material.Grass)
+ensurePart(world, "EmergencySpawnBase", Vector3.new(42, 4, 42), Vector3.new(0, 5, 0), Color3.fromRGB(22, 163, 74), Enum.Material.Grass)
+ensureSpawn(world)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Script" referent="14">
+        <Properties>
+          <string name="Name">Main</string>
+          <token name="RunContext">0</token>
+          <string name="Source"><![CDATA[--!strict
+
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RemoteValidator = require(Shared.Security.RemoteValidator)
+local ProductConfig = require(Shared.Monetization.ProductConfig)
+local GameConfig = require(Shared.GameConfig)
+
+local Services = script.Parent:WaitForChild("Services")
+local NetworkService = require(Services:WaitForChild("NetworkService"))
+local PlayerDataService = require(Services:WaitForChild("PlayerDataService"))
+local ReceiptProcessor = require(Services:WaitForChild("ReceiptProcessor"))
+local WorldService = require(Services:WaitForChild("WorldService"))
+
+local networkService = NetworkService.new()
+local playerDataService = PlayerDataService.new()
+local receiptProcessor = ReceiptProcessor.new(playerDataService)
+
+local actionEvent = networkService:getEvent("Action")
+local stateEvent = networkService:getEvent("State")
+local requestStateFunction = networkService:getFunction("RequestState")
+
+local playersInitialized: { [number]: boolean } = {}
+
+local function pushState(player: Player, message: string?, effect: { [string]: any }?): ()
+	local state = playerDataService:toPublicState(player)
+	if state ~= nil then
+		stateEvent:FireClient(player, {
+			state = state,
+			message = message,
+			effect = effect,
+		})
+	end
+end
+
+local function hatchEffect(dinoId: string?): { [string]: any }?
+	if dinoId == nil then
+		return nil
+	end
+	local dino = GameConfig.getDinosaur(dinoId :: any)
+	if dino == nil then
+		return nil
+	end
+	return {
+		kind = "hatchReveal",
+		dinoId = dino.id,
+		displayName = dino.displayName,
+		rarity = dino.rarity,
+	}
+end
+
+local function applyMovement(player: Player, walkSpeed: number): ()
+	local character = player.Character
+	if character == nil then
+		return
+	end
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	if humanoid == nil then
+		return
+	end
+	humanoid.WalkSpeed = walkSpeed
+end
+
+local function applyTrail(player: Player): ()
+	local data = playerDataService:get(player)
+	if data == nil then
+		return
+	end
+	local character = player.Character
+	if character == nil then
+		return
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return
+	end
+	local oldTrail = root:FindFirstChild("DinoDashTrail")
+	if oldTrail ~= nil then
+		oldTrail:Destroy()
+	end
+	local oldA0 = root:FindFirstChild("DinoDashTrailA0")
+	if oldA0 ~= nil then
+		oldA0:Destroy()
+	end
+	local oldA1 = root:FindFirstChild("DinoDashTrailA1")
+	if oldA1 ~= nil then
+		oldA1:Destroy()
+	end
+
+	local trailConfig = GameConfig.getTrail(data.equippedTrail)
+	if trailConfig == nil or trailConfig.id == "none" then
+		return
+	end
+	local a0 = Instance.new("Attachment")
+	a0.Name = "DinoDashTrailA0"
+	a0.Position = Vector3.new(0, 1.5, 0.7)
+	a0.Parent = root
+	local a1 = Instance.new("Attachment")
+	a1.Name = "DinoDashTrailA1"
+	a1.Position = Vector3.new(0, -1.5, 0.7)
+	a1.Parent = root
+	local trail = Instance.new("Trail")
+	trail.Name = "DinoDashTrail"
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Color = trailConfig.color
+	trail.Lifetime = 0.7
+	trail.MinLength = 0.1
+	trail.Parent = root
+end
+
+local actionSchema = {
+	action = { type = "string", required = true, maxLength = 32 },
+	trailId = { type = "string", required = false, maxLength = 32 },
+	nestId = { type = "string", required = false, maxLength = 32 },
+	berryNodeId = { type = "string", required = false, maxLength = 32 },
+	zoneId = { type = "string", required = false, maxLength = 32 },
+	dinoId = { type = "string", required = false, maxLength = 32 },
+	mode = { type = "string", required = false, maxLength = 32 },
+}
+
+local function getRootPosition(player: Player): Vector3?
+	local character = player.Character
+	if character == nil then
+		return nil
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return nil
+	end
+	return root.Position
+end
+
+local function isPlayerNear(player: Player, targetPosition: Vector3?, maxDistance: number): boolean
+	local rootPosition = getRootPosition(player)
+	if rootPosition == nil or targetPosition == nil then
+		return false
+	end
+	return (rootPosition - targetPosition).Magnitude <= maxDistance
+end
+
+local function collectEggNest(player: Player, nestId: string): ()
+	if not isPlayerNear(player, WorldService.getEggNestPosition(nestId), 30) then
+		pushState(player, "Move closer to that egg nest first.")
+		return
+	end
+	local ok, message, dinoId = playerDataService:collectEggNest(player, nestId :: any)
+	pushState(player, if ok then `CRACK! {message}` else message, if ok then hatchEffect(dinoId) else nil)
+end
+
+local function unlockZone(player: Player, zoneId: string): ()
+	if not isPlayerNear(player, WorldService.getZoneGatePosition(zoneId), 38) then
+		pushState(player, "Stand at that gate to unlock it.")
+		return
+	end
+	local _ok, message = playerDataService:unlockZone(player, zoneId :: any)
+	pushState(player, message)
+end
+
+local function collectBerryNode(player: Player, berryNodeId: string): ()
+	if not isPlayerNear(player, WorldService.getBerryNodePosition(berryNodeId), 28) then
+		pushState(player, "Move closer to that berry bush first.")
+		return
+	end
+	local _ok, message = playerDataService:collectBerryNode(player, berryNodeId :: any)
+	pushState(player, message)
+end
+
+local function feedActiveDinoAtStation(player: Player): ()
+	if not isPlayerNear(player, WorldService.getFeedStationPosition(), 24) then
+		pushState(player, "Stand beside the feed station to feed your dinosaur.")
+		return
+	end
+	local ok, message = playerDataService:feedActiveDino(player)
+	pushState(player, message, if ok then { kind = "feedPulse" } else nil)
+end
+
+actionEvent.OnServerEvent:Connect(function(player: Player, payload: any)
+	if not networkService:checkLimit(player, "Action") then
+		pushState(player, "Slow down a little.")
+		return
+	end
+	local valid, reason = RemoteValidator.validateTable(payload, actionSchema)
+	if not valid then
+		warn(`Rejected malformed payload from {player.UserId}: {reason or "unknown"}`)
+		return
+	end
+
+	local action = payload.action :: string
+	if action == "hatch" then
+		local ok, message, dinoId = playerDataService:hatch(player)
+		pushState(player, message, if ok then hatchEffect(dinoId) else nil)
+	elseif action == "collectEggNest" then
+		if typeof(payload.nestId) == "string" then
+			collectEggNest(player, payload.nestId)
+		else
+			pushState(player, "Choose a real egg nest.")
+		end
+	elseif action == "collectBerryNode" then
+		if typeof(payload.berryNodeId) == "string" then
+			collectBerryNode(player, payload.berryNodeId)
+		else
+			pushState(player, "Choose a real berry bush.")
+		end
+	elseif action == "setDinoMode" then
+		if typeof(payload.dinoId) == "string" and (payload.mode == "Following" or payload.mode == "StoredInNest") then
+			local _ok, message = playerDataService:setDinoMode(player, payload.dinoId :: any, payload.mode :: any)
+			pushState(player, message)
+		else
+			pushState(player, "Choose a dinosaur you own.")
+		end
+	elseif action == "unlockZone" then
+		if typeof(payload.zoneId) == "string" then
+			unlockZone(player, payload.zoneId)
+		else
+			pushState(player, "Choose a real zone gate.")
+		end
+	elseif action == "upgradeNest" then
+		local _ok, message = playerDataService:upgradeNest(player)
+		pushState(player, message)
+	elseif action == "feedActiveDino" then
+		feedActiveDinoAtStation(player)
+	elseif action == "toggleMount" then
+		local _ok, message, walkSpeed = playerDataService:toggleMount(player)
+		applyMovement(player, walkSpeed)
+		pushState(player, message)
+	elseif action == "buyTrail" then
+		local ok, message = playerDataService:buyTrail(player, payload.trailId :: any)
+		if ok then
+			applyTrail(player)
+		end
+		pushState(player, message)
+	elseif action == "buySmallEggPack" then
+		local productId = ProductConfig.DEVELOPER_PRODUCTS.SmallEggPack.productId
+		if productId > 0 then
+			MarketplaceService:PromptProductPurchase(player, productId)
+		else
+			pushState(player, "Egg pack product ID is not configured yet.")
+		end
+	elseif action == "buyMegaEggPack" then
+		local productId = ProductConfig.DEVELOPER_PRODUCTS.MegaEggPack.productId
+		if productId > 0 then
+			MarketplaceService:PromptProductPurchase(player, productId)
+		else
+			pushState(player, "Mega pack product ID is not configured yet.")
+		end
+	else
+		pushState(player, "Unknown action.")
+	end
+end)
+
+requestStateFunction.OnServerInvoke = function(player: Player): any
+	if not networkService:checkLimit(player, "RequestState") then
+		return nil
+	end
+	if playerDataService:get(player) == nil then
+		playerDataService:load(player)
+		playerDataService:createLeaderstats(player)
+		playersInitialized[player.UserId] = true
+	end
+	return playerDataService:toPublicState(player)
+end
+
+MarketplaceService.ProcessReceipt = function(receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
+	return receiptProcessor:processReceipt(receiptInfo)
+end
+
+WorldService.build()
+WorldService.connectInteractions(collectEggNest, unlockZone, collectBerryNode, feedActiveDinoAtStation)
+
+local function initializePlayer(player: Player): ()
+	if playersInitialized[player.UserId] == true then
+		pushState(player, "Welcome back to your dino nest!")
+		return
+	end
+
+	playersInitialized[player.UserId] = true
+	playerDataService:load(player)
+	playerDataService:createLeaderstats(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		applyMovement(player, playerDataService:getWalkSpeed(player))
+		applyTrail(player)
+	end)
+	pushState(player, "Welcome to your dino nest cave! Collect the glowing starter egg.")
+end
+
+Players.PlayerAdded:Connect(function(player: Player)
+	initializePlayer(player)
+end)
+
+for _, player in Players:GetPlayers() do
+	task.spawn(initializePlayer, player)
+end
+
+Players.PlayerRemoving:Connect(function(player: Player)
+	playersInitialized[player.UserId] = nil
+	playerDataService:unload(player)
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(GameConfig.INCOME_TICK_SECONDS)
+		for _, player in Players:GetPlayers() do
+			playerDataService:growDinos(player, GameConfig.INCOME_TICK_SECONDS)
+			local income = playerDataService:getIncomePerSecond(player)
+			if income > 0 then
+				playerDataService:addEggs(player, income * GameConfig.INCOME_TICK_SECONDS)
+			end
+			pushState(player, nil)
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(GameConfig.AUTOSAVE_SECONDS)
+		for _, player in Players:GetPlayers() do
+			playerDataService:save(player)
+		end
+	end
+end)
+
+game:BindToClose(function()
+	for _, player in Players:GetPlayers() do
+		playerDataService:save(player)
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="15">
+        <Properties>
+          <string name="Name">Services</string>
+        </Properties>
+        <Item class="ModuleScript" referent="16">
+          <Properties>
+            <string name="Name">EntitlementService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local EntitlementService = {}
+
+function EntitlementService.userOwnsPassAsync(player: Player, passId: number): boolean
+	if passId <= 0 then
+		return false
+	end
+
+	local ok, result = pcall(function()
+		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
+	end)
+
+	if not ok then
+		warn(`Game pass ownership check failed for {player.UserId}/{passId}: {result}`)
+		return false
+	end
+
+	return result == true
+end
+
+return EntitlementService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="17">
+          <Properties>
+            <string name="Name">NetworkService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RemoteRegistry = require(Shared.Network.RemoteRegistry)
+local RateLimiter = require(Shared.Security.RateLimiter)
+
+local NetworkService = {}
+NetworkService.__index = NetworkService
+
+export type NetworkService = typeof(setmetatable({} :: {
+	_folder: Folder,
+	_rateLimiter: any,
+}, NetworkService))
+
+local function ensureRemote(parent: Instance, definition: RemoteRegistry.RemoteDefinition): Instance
+	local existing = parent:FindFirstChild(definition.name)
+	if existing ~= nil then
+		return existing
+	end
+
+	local remote: Instance
+	if definition.kind == "RemoteFunction" then
+		remote = Instance.new("RemoteFunction")
+	else
+		remote = Instance.new("RemoteEvent")
+	end
+	remote.Name = definition.name
+	remote.Parent = parent
+	return remote
+end
+
+function NetworkService.new(): NetworkService
+	local folder = ReplicatedStorage:FindFirstChild(RemoteRegistry.FOLDER_NAME)
+	if folder == nil then
+		folder = Instance.new("Folder")
+		folder.Name = RemoteRegistry.FOLDER_NAME
+		folder.Parent = ReplicatedStorage
+	end
+
+	for _, definition in RemoteRegistry.REMOTES do
+		ensureRemote(folder, definition)
+	end
+
+	return setmetatable({
+		_folder = folder :: Folder,
+		_rateLimiter = RateLimiter.new(),
+	}, NetworkService)
+end
+
+function NetworkService.getEvent(self: NetworkService, remoteKey: string): RemoteEvent
+	local definition = RemoteRegistry.REMOTES[remoteKey]
+	assert(definition ~= nil and definition.kind == "RemoteEvent", `Unknown RemoteEvent {remoteKey}`)
+	return self._folder:WaitForChild(definition.name) :: RemoteEvent
+end
+
+function NetworkService.getFunction(self: NetworkService, remoteKey: string): RemoteFunction
+	local definition = RemoteRegistry.REMOTES[remoteKey]
+	assert(definition ~= nil and definition.kind == "RemoteFunction", `Unknown RemoteFunction {remoteKey}`)
+	return self._folder:WaitForChild(definition.name) :: RemoteFunction
+end
+
+function NetworkService.checkLimit(self: NetworkService, player: Player, remoteKey: string): boolean
+	local definition = RemoteRegistry.REMOTES[remoteKey]
+	if definition == nil then
+		return false
+	end
+	local result = self._rateLimiter:check(player, remoteKey, definition.maxCalls, definition.windowSeconds)
+	return result.allowed
+end
+
+return NetworkService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="18">
+          <Properties>
+            <string name="Name">PlayerDataService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared.GameConfig)
+local Types = require(Shared.Types)
+
+type PlayerData = Types.PlayerData
+type PublicState = Types.PublicState
+type DinosaurId = Types.DinosaurId
+type TrailId = Types.TrailId
+type ZoneId = Types.ZoneId
+type EggNestId = Types.EggNestId
+type BerryNodeId = Types.BerryNodeId
+type DinoMode = Types.DinoMode
+type OwnedDinoRecord = Types.OwnedDinoRecord
+
+local STORE_NAME = "DinoDash_PlayerData_v1"
+
+local PlayerDataService = {}
+PlayerDataService.__index = PlayerDataService
+
+export type PlayerDataService = typeof(setmetatable({} :: {
+	_store: GlobalDataStore,
+	_profiles: { [number]: PlayerData },
+	_rng: Random,
+}, PlayerDataService))
+
+local function defaultData(): PlayerData
+	return {
+		schemaVersion = GameConfig.SCHEMA_VERSION,
+		eggs = GameConfig.STARTING_EGGS,
+		nestLevel = 1,
+		hatchCount = 0,
+		dinos = {},
+		ownedTrails = { none = true },
+		equippedTrail = "none",
+		lastSaveUnix = os.time(),
+		starterEggClaimed = false,
+		followingDinoId = nil,
+		dinoModes = {},
+		unlockedZones = { ["starter-valley"] = true },
+		nestCooldowns = {},
+		berryCooldowns = {},
+		processedReceipts = {},
+		ownedDinos = {},
+		nextDinoUid = 1,
+		activeDinoUid = nil,
+		mountedDinoUid = nil,
+		berryFood = GameConfig.STARTING_BERRY_FOOD,
+	}
+end
+
+local function makeOwnedDino(uid: string, dinoId: DinosaurId, ageSeconds: number, mode: DinoMode): OwnedDinoRecord
+	return {
+		uid = uid,
+		id = dinoId,
+		ageSeconds = math.max(0, math.floor(ageSeconds)),
+		bornUnix = os.time(),
+		mode = mode,
+		colorVariant = "standard",
+	}
+end
+
+local function sanitize(raw: any): PlayerData
+	local data = defaultData()
+	if typeof(raw) ~= "table" then
+		return data
+	end
+
+	data.schemaVersion = GameConfig.SCHEMA_VERSION
+	data.eggs = math.max(0, math.floor(if typeof(raw.eggs) == "number" then raw.eggs else data.eggs))
+	data.nestLevel = math.clamp(math.floor(if typeof(raw.nestLevel) == "number" then raw.nestLevel else 1), 1, #GameConfig.NESTS)
+	data.hatchCount = math.max(0, math.floor(if typeof(raw.hatchCount) == "number" then raw.hatchCount else 0))
+	data.lastSaveUnix = math.floor(if typeof(raw.lastSaveUnix) == "number" then raw.lastSaveUnix else os.time())
+	data.starterEggClaimed = raw.starterEggClaimed == true
+	data.nextDinoUid = math.max(1, math.floor(if typeof(raw.nextDinoUid) == "number" then raw.nextDinoUid else 1))
+	data.berryFood = math.max(0, math.floor(if typeof(raw.berryFood) == "number" then raw.berryFood else GameConfig.STARTING_BERRY_FOOD))
+
+	local ownsAnyDino = false
+	local firstOwnedDinoId: DinosaurId? = nil
+	if typeof(raw.dinos) == "table" then
+		for _, dino in GameConfig.DINOSAURS do
+			local amount = raw.dinos[dino.id]
+			if typeof(amount) == "number" and amount > 0 then
+				data.dinos[dino.id] = math.floor(amount)
+				ownsAnyDino = true
+				if firstOwnedDinoId == nil then
+					firstOwnedDinoId = dino.id
+				end
+			end
+		end
+	end
+	if ownsAnyDino and not data.starterEggClaimed then
+		-- Migration for pre-tycoon test profiles that already hatched a dino through the old Hatch button.
+		data.starterEggClaimed = true
+	end
+
+	if typeof(raw.ownedTrails) == "table" then
+		for _, trail in GameConfig.TRAILS do
+			if raw.ownedTrails[trail.id] == true then
+				data.ownedTrails[trail.id] = true
+			end
+		end
+	end
+
+	if typeof(raw.equippedTrail) == "string" and data.ownedTrails[raw.equippedTrail :: TrailId] == true then
+		data.equippedTrail = raw.equippedTrail :: TrailId
+	end
+
+	if typeof(raw.unlockedZones) == "table" then
+		for _, zone in GameConfig.ZONES do
+			if raw.unlockedZones[zone.id] == true then
+				data.unlockedZones[zone.id] = true
+			end
+		end
+	end
+	data.unlockedZones["starter-valley"] = true
+
+	if typeof(raw.nestCooldowns) == "table" then
+		for _, eggNest in GameConfig.EGG_NESTS do
+			local cooldown = raw.nestCooldowns[eggNest.id]
+			if typeof(cooldown) == "number" then
+				data.nestCooldowns[eggNest.id] = math.max(0, math.floor(cooldown))
+			end
+		end
+	end
+
+	if typeof(raw.berryCooldowns) == "table" then
+		for _, berryNode in GameConfig.BERRY_NODES do
+			local cooldown = raw.berryCooldowns[berryNode.id]
+			if typeof(cooldown) == "number" then
+				data.berryCooldowns[berryNode.id] = math.max(0, math.floor(cooldown))
+			end
+		end
+	end
+
+	if typeof(raw.processedReceipts) == "table" then
+		local copied = 0
+		for purchaseId, processed in raw.processedReceipts do
+			if typeof(purchaseId) == "string" and processed == true and #purchaseId <= 128 then
+				data.processedReceipts[purchaseId] = true
+				copied += 1
+				if copied >= 250 then
+					break
+				end
+			end
+		end
+	end
+
+	if typeof(raw.ownedDinos) == "table" then
+		for uid, record in raw.ownedDinos do
+			if typeof(uid) == "string" and typeof(record) == "table" and typeof(record.id) == "string" then
+				local dinoId = record.id :: DinosaurId
+				if GameConfig.getDinosaur(dinoId) ~= nil then
+					local mode: DinoMode = if record.mode == "StoredInNest" then "StoredInNest" else "Following"
+					local ageSeconds = if typeof(record.ageSeconds) == "number" then record.ageSeconds else 0
+					data.ownedDinos[uid] = makeOwnedDino(uid, dinoId, ageSeconds, mode)
+					ownsAnyDino = true
+					if firstOwnedDinoId == nil then
+						firstOwnedDinoId = dinoId
+					end
+				end
+			end
+		end
+	end
+
+	if next(data.ownedDinos) ~= nil then
+		data.dinos = {}
+		for _, record in data.ownedDinos do
+			data.dinos[record.id] = (data.dinos[record.id] or 0) + 1
+		end
+	end
+
+	if next(data.ownedDinos) == nil then
+		for _, dino in GameConfig.DINOSAURS do
+			local amount = data.dinos[dino.id] or 0
+			for _index = 1, amount do
+				local uid = `dino_{data.nextDinoUid}`
+				data.nextDinoUid += 1
+				data.ownedDinos[uid] = makeOwnedDino(uid, dino.id, if dino.id == "starter-raptor" then 45 else 0, "Following")
+			end
+		end
+	end
+
+	if typeof(raw.activeDinoUid) == "string" and data.ownedDinos[raw.activeDinoUid] ~= nil then
+		data.activeDinoUid = raw.activeDinoUid
+	end
+	if data.activeDinoUid == nil then
+		for uid, _record in data.ownedDinos do
+			data.activeDinoUid = uid
+			break
+		end
+	end
+
+	if typeof(raw.mountedDinoUid) == "string" and data.ownedDinos[raw.mountedDinoUid] ~= nil then
+		data.mountedDinoUid = raw.mountedDinoUid
+	end
+
+	if typeof(raw.dinoModes) == "table" then
+		for _, dino in GameConfig.DINOSAURS do
+			local mode = raw.dinoModes[dino.id]
+			if (mode == "Following" or mode == "StoredInNest") and (data.dinos[dino.id] or 0) > 0 then
+				data.dinoModes[dino.id] = mode :: DinoMode
+			end
+		end
+	end
+
+	if typeof(raw.followingDinoId) == "string" and (data.dinos[raw.followingDinoId :: DinosaurId] or 0) > 0 then
+		data.followingDinoId = raw.followingDinoId :: DinosaurId
+		data.dinoModes[data.followingDinoId :: DinosaurId] = "Following"
+	elseif firstOwnedDinoId ~= nil then
+		data.followingDinoId = firstOwnedDinoId
+		data.dinoModes[firstOwnedDinoId] = "Following"
+	end
+
+	return data
+end
+
+local function dataKey(player: Player): string
+	return `player_{player.UserId}`
+end
+
+local function retry<T>(callback: () -> T): (boolean, T?)
+	local lastResult: T? = nil
+	for attempt = 1, 4 do
+		local ok, result = pcall(callback)
+		if ok then
+			lastResult = result
+			return true, lastResult
+		end
+		task.wait(0.5 * attempt)
+	end
+	return false, lastResult
+end
+
+local function countOwnedDinos(data: PlayerData): number
+	local ownedCount = 0
+	for _, _record in data.ownedDinos do
+		ownedCount += 1
+	end
+	if ownedCount > 0 then
+		return ownedCount
+	end
+	for _, amount in data.dinos do
+		ownedCount += amount
+	end
+	return ownedCount
+end
+
+function PlayerDataService.new(): PlayerDataService
+	return setmetatable({
+		_store = DataStoreService:GetDataStore(STORE_NAME),
+		_profiles = {},
+		_rng = Random.new(),
+	}, PlayerDataService)
+end
+
+function PlayerDataService.load(self: PlayerDataService, player: Player): PlayerData
+	local ok, raw = retry(function()
+		return self._store:GetAsync(dataKey(player))
+	end)
+
+	local data = if ok then sanitize(raw) else defaultData()
+	local offlineSeconds = math.clamp(os.time() - data.lastSaveUnix, 0, GameConfig.MAX_OFFLINE_SECONDS)
+	if offlineSeconds > 0 then
+		data.eggs += math.floor(self:getIncomePerSecondFromData(data) * offlineSeconds * 0.25)
+	end
+
+	self._profiles[player.UserId] = data
+	return data
+end
+
+function PlayerDataService.save(self: PlayerDataService, player: Player): boolean
+	local data = self._profiles[player.UserId]
+	if data == nil then
+		return true
+	end
+	data.lastSaveUnix = os.time()
+
+	local ok = retry(function()
+		self._store:UpdateAsync(dataKey(player), function(_old: any)
+			return data
+		end)
+		return true
+	end)
+	return ok
+end
+
+function PlayerDataService.unload(self: PlayerDataService, player: Player): ()
+	self:save(player)
+	self._profiles[player.UserId] = nil
+end
+
+function PlayerDataService.get(self: PlayerDataService, player: Player): PlayerData?
+	return self._profiles[player.UserId]
+end
+
+function PlayerDataService.getIncomePerSecondFromData(_self: PlayerDataService, data: PlayerData): number
+	local income = 0
+	for _, dino in GameConfig.DINOSAURS do
+		income += (data.dinos[dino.id] or 0) * dino.eggsPerSecond
+	end
+	return income * GameConfig.getNest(data.nestLevel).incomeMultiplier
+end
+
+function PlayerDataService.getIncomePerSecond(self: PlayerDataService, player: Player): number
+	local data = self:get(player)
+	if data == nil then
+		return 0
+	end
+	return self:getIncomePerSecondFromData(data)
+end
+
+function PlayerDataService.addEggs(self: PlayerDataService, player: Player, amount: number): ()
+	local data = self:get(player)
+	if data == nil then
+		return
+	end
+	data.eggs = math.max(0, math.floor(data.eggs + amount))
+end
+
+function PlayerDataService.createOwnedDino(_self: PlayerDataService, data: PlayerData, dinoId: DinosaurId, startingAgeSeconds: number?): string
+	local uid = `dino_{data.nextDinoUid}`
+	data.nextDinoUid += 1
+	local record = makeOwnedDino(uid, dinoId, startingAgeSeconds or 0, "Following")
+	data.ownedDinos[uid] = record
+	data.dinos[dinoId] = (data.dinos[dinoId] or 0) + 1
+	data.activeDinoUid = uid
+	data.followingDinoId = dinoId
+	data.dinoModes[dinoId] = "Following"
+	data.mountedDinoUid = nil
+	return uid
+end
+
+function PlayerDataService.growDinos(self: PlayerDataService, player: Player, deltaSeconds: number): ()
+	local data = self:get(player)
+	if data == nil then
+		return
+	end
+	for _, record in data.ownedDinos do
+		record.ageSeconds += deltaSeconds
+	end
+end
+
+function PlayerDataService.getActiveDino(self: PlayerDataService, player: Player): OwnedDinoRecord?
+	local data = self:get(player)
+	if data == nil or data.activeDinoUid == nil then
+		return nil
+	end
+	return data.ownedDinos[data.activeDinoUid]
+end
+
+function PlayerDataService.feedActiveDino(self: PlayerDataService, player: Player): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	if data.activeDinoUid == nil then
+		return false, "Hatch a dinosaur before feeding."
+	end
+	local record = data.ownedDinos[data.activeDinoUid]
+	if record == nil then
+		return false, "Choose a dinosaur to feed."
+	end
+	if data.berryFood <= 0 then
+		return false, "You need more dino snacks. Explore berry bushes soon."
+	end
+	local dino = GameConfig.getDinosaur(record.id)
+	if dino == nil then
+		return false, "That dinosaur is missing from the catalog."
+	end
+	data.berryFood -= 1
+	record.ageSeconds = math.min(dino.growthSeconds, record.ageSeconds + GameConfig.FEED_GROWTH_SECONDS)
+	local stage = GameConfig.getGrowthStage(record.ageSeconds, dino.growthSeconds)
+	return true, `{dino.displayName} loved the {dino.favoriteFood}! Growth stage: {stage}.`
+end
+
+function PlayerDataService.toggleMount(self: PlayerDataService, player: Player): (boolean, string, number)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading.", 16
+	end
+	if data.mountedDinoUid ~= nil then
+		data.mountedDinoUid = nil
+		return true, "You hopped off your dinosaur.", 16
+	end
+	if data.activeDinoUid == nil then
+		return false, "Hatch a dinosaur before mounting.", 16
+	end
+	local record = data.ownedDinos[data.activeDinoUid]
+	if record == nil then
+		return false, "Choose a dinosaur to ride.", 16
+	end
+	local dino = GameConfig.getDinosaur(record.id)
+	if dino == nil or not dino.mountable then
+		return false, "This dinosaur cannot be mounted.", 16
+	end
+	local stage = GameConfig.getGrowthStage(record.ageSeconds, dino.growthSeconds)
+	if stage ~= "Adult" then
+		return false, `Raise {dino.displayName} to Adult before riding.`, 16
+	end
+	data.mountedDinoUid = record.uid
+	return true, `Mounted {dino.displayName}!`, 16 + dino.movementBonus
+end
+
+function PlayerDataService.getWalkSpeed(self: PlayerDataService, player: Player): number
+	local data = self:get(player)
+	if data == nil or data.mountedDinoUid == nil then
+		return 16
+	end
+	local record = data.ownedDinos[data.mountedDinoUid]
+	if record == nil then
+		data.mountedDinoUid = nil
+		return 16
+	end
+	local dino = GameConfig.getDinosaur(record.id)
+	if dino == nil or GameConfig.getGrowthStage(record.ageSeconds, dino.growthSeconds) ~= "Adult" then
+		data.mountedDinoUid = nil
+		return 16
+	end
+	return 16 + dino.movementBonus
+end
+
+function PlayerDataService.collectBerryNode(self: PlayerDataService, player: Player, berryNodeId: BerryNodeId): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local berryNode = GameConfig.getBerryNode(berryNodeId)
+	if berryNode == nil then
+		return false, "That berry bush does not exist."
+	end
+	if data.unlockedZones[berryNode.zoneId] ~= true then
+		return false, "That berry patch is in a locked zone."
+	end
+	local now = os.time()
+	local readyAt = data.berryCooldowns[berryNodeId] or 0
+	if readyAt > now then
+		return false, `That bush needs {readyAt - now}s to regrow berries.`
+	end
+	data.berryFood += berryNode.berriesGranted
+	data.berryCooldowns[berryNodeId] = now + berryNode.cooldownSeconds
+	return true, `Collected {berryNode.berriesGranted} snacks from {berryNode.displayName}.`
+end
+
+function PlayerDataService.hasProcessedReceipt(self: PlayerDataService, player: Player, purchaseId: string): boolean
+	local data = self:get(player)
+	if data == nil then
+		return false
+	end
+	return data.processedReceipts[purchaseId] == true
+end
+
+function PlayerDataService.grantReceiptEggs(self: PlayerDataService, player: Player, purchaseId: string, eggs: number): boolean
+	local data = self:get(player)
+	if data == nil then
+		return false
+	end
+	if data.processedReceipts[purchaseId] == true then
+		return true
+	end
+
+	local previousEggs = data.eggs
+	data.eggs = math.max(0, math.floor(data.eggs + eggs))
+	data.processedReceipts[purchaseId] = true
+	if self:save(player) then
+		return true
+	end
+
+	data.eggs = previousEggs
+	data.processedReceipts[purchaseId] = nil
+	return false
+end
+
+function PlayerDataService.collectEggNest(self: PlayerDataService, player: Player, nestId: EggNestId): (boolean, string, DinosaurId?)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading.", nil
+	end
+
+	local eggNest = GameConfig.getEggNest(nestId)
+	if eggNest == nil then
+		return false, "That egg nest does not exist.", nil
+	end
+	if data.unlockedZones[eggNest.zoneId] ~= true then
+		return false, "That zone is locked. Upgrade your nest and open the gate first.", nil
+	end
+	if eggNest.id == "starter-egg" and data.starterEggClaimed then
+		return false, "Your starter egg already hatched. Explore Starter Valley for more nests.", nil
+	end
+	if countOwnedDinos(data) >= GameConfig.getNest(data.nestLevel).capacity then
+		return false, "Your nest is full. Upgrade it before collecting more dinos.", nil
+	end
+
+	local now = os.time()
+	local cooldownReadyAt = data.nestCooldowns[nestId] or 0
+	if cooldownReadyAt > now then
+		return false, `This nest needs {cooldownReadyAt - now}s to settle.`, nil
+	end
+
+	local dino = if eggNest.dinoId ~= nil then GameConfig.getDinosaur(eggNest.dinoId) else GameConfig.rollDinosaur(self._rng)
+	if dino == nil then
+		return false, "No dinosaur could hatch from that egg.", nil
+	end
+
+	self:createOwnedDino(data, dino.id, if eggNest.id == "starter-egg" then 45 else 0)
+	data.hatchCount += 1
+
+	if eggNest.id == "starter-egg" then
+		data.starterEggClaimed = true
+		data.eggs += 15
+	else
+		data.nestCooldowns[nestId] = now + eggNest.cooldownSeconds
+	end
+
+	return true, `Your {eggNest.displayName} hatched into {dino.displayName}!`, dino.id
+end
+
+function PlayerDataService.setDinoMode(self: PlayerDataService, player: Player, dinoId: DinosaurId, mode: DinoMode): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local dino = GameConfig.getDinosaur(dinoId)
+	if dino == nil or (data.dinos[dinoId] or 0) <= 0 then
+		return false, "You do not own that dinosaur yet."
+	end
+
+	local selectedUid: string? = nil
+	for uid, record in data.ownedDinos do
+		if record.id == dinoId then
+			selectedUid = uid
+			break
+		end
+	end
+	if selectedUid == nil then
+		return false, "That dinosaur needs to hatch again before it can follow you."
+	end
+
+	local record = data.ownedDinos[selectedUid]
+	if mode == "Following" then
+		data.activeDinoUid = selectedUid
+		data.followingDinoId = dinoId
+		data.dinoModes[dinoId] = "Following"
+		record.mode = "Following"
+		return true, `{dino.displayName} is following you.`
+	end
+	if data.followingDinoId == dinoId then
+		data.followingDinoId = nil
+	end
+	if data.activeDinoUid == selectedUid then
+		data.activeDinoUid = nil
+	end
+	if data.mountedDinoUid == selectedUid then
+		data.mountedDinoUid = nil
+	end
+	record.mode = "StoredInNest"
+	data.dinoModes[dinoId] = "StoredInNest"
+	return true, `{dino.displayName} is resting in your nest cave.`
+end
+
+function PlayerDataService.unlockZone(self: PlayerDataService, player: Player, zoneId: ZoneId): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local zone = GameConfig.getZone(zoneId)
+	if zone == nil then
+		return false, "Unknown zone."
+	end
+	if data.unlockedZones[zoneId] == true then
+		return false, `{zone.displayName} is already unlocked.`
+	end
+	if data.nestLevel < zone.requiredNestLevel then
+		return false, `Upgrade your nest to level {zone.requiredNestLevel} to unlock {zone.displayName}.`
+	end
+	if data.eggs < zone.unlockCost then
+		return false, `You need {zone.unlockCost} eggs to unlock {zone.displayName}.`
+	end
+	data.eggs -= zone.unlockCost
+	data.unlockedZones[zoneId] = true
+	return true, `{zone.displayName} unlocked! New egg nests are open.`
+end
+
+function PlayerDataService.hatch(self: PlayerDataService, player: Player): (boolean, string, string?)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading.", nil
+	end
+	if not data.starterEggClaimed then
+		return false, "Collect the glowing starter egg beside your nest cave first.", nil
+	end
+
+	local nest = GameConfig.getNest(data.nestLevel)
+	if countOwnedDinos(data) >= nest.capacity then
+		return false, "Your nest is full. Upgrade it before hatching more dinos.", nil
+	end
+
+	local cost = GameConfig.getHatchCost(data.hatchCount)
+	if data.eggs < cost then
+		return false, "Not enough eggs to hatch. Let your dinos work or find egg nests.", nil
+	end
+
+	data.eggs -= cost
+	data.hatchCount += 1
+	local dino = GameConfig.rollDinosaur(self._rng)
+	self:createOwnedDino(data, dino.id, 0)
+	return true, `Hatched {dino.displayName}! Feed it at your nest to grow it.`, dino.id
+end
+
+function PlayerDataService.upgradeNest(self: PlayerDataService, player: Player): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local nextNest = GameConfig.getNextNest(data.nestLevel)
+	if nextNest == nil then
+		return false, "Your nest is already max level."
+	end
+	if data.eggs < nextNest.upgradeCost then
+		return false, "Not enough eggs to upgrade your nest."
+	end
+	data.eggs -= nextNest.upgradeCost
+	data.nestLevel = nextNest.level
+	return true, `Nest upgraded to level {nextNest.level}! Your cave expanded.`
+end
+
+function PlayerDataService.buyTrail(self: PlayerDataService, player: Player, trailId: TrailId): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local trail = GameConfig.getTrail(trailId)
+	if trail == nil then
+		return false, "Invalid trail."
+	end
+	if data.ownedTrails[trailId] == true then
+		data.equippedTrail = trailId
+		return true, `Equipped {trail.displayName}.`
+	end
+	if data.eggs < trail.cost then
+		return false, "Not enough eggs for that trail."
+	end
+	data.eggs -= trail.cost
+	data.ownedTrails[trailId] = true
+	data.equippedTrail = trailId
+	return true, `Unlocked {trail.displayName}!`
+end
+
+function PlayerDataService.getObjective(self: PlayerDataService, player: Player): string
+	local data = self:get(player)
+	if data == nil then
+		return "Loading your nest cave..."
+	end
+	if not data.starterEggClaimed then
+		return "Collect the glowing starter egg beside your nest cave."
+	end
+	if countOwnedDinos(data) == 1 then
+		local activeRecord = if data.activeDinoUid ~= nil then data.ownedDinos[data.activeDinoUid] else nil
+		if activeRecord ~= nil then
+			local activeDino = GameConfig.getDinosaur(activeRecord.id)
+			if activeDino ~= nil and GameConfig.getGrowthStage(activeRecord.ageSeconds, activeDino.growthSeconds) ~= "Adult" then
+				if data.berryFood <= 0 then
+					return "Gather berries from glowing bushes, then feed your baby dinosaur."
+				end
+				return "Feed your baby dinosaur at the nest station to grow it into a rideable adult."
+			end
+		end
+		return "Your Starter Raptor is ready! Mount up or explore the valley for another egg nest."
+	end
+	if data.nestLevel < 2 then
+		return "Earn 100 eggs and upgrade your nest to open Jungle Grove."
+	end
+	if data.unlockedZones["jungle-grove"] ~= true then
+		return "Open the Jungle Grove gate to find rarer egg nests."
+	end
+	return "Explore unlocked zones, find egg nests, and grow your dino cave."
+end
+
+function PlayerDataService.toPublicState(self: PlayerDataService, player: Player): PublicState?
+	local data = self:get(player)
+	if data == nil then
+		return nil
+	end
+	local publicDinos: { [string]: number } = {}
+	for _, dino in GameConfig.DINOSAURS do
+		publicDinos[dino.id] = data.dinos[dino.id] or 0
+	end
+	local ownedTrails: { [string]: boolean } = {}
+	for _, trail in GameConfig.TRAILS do
+		ownedTrails[trail.id] = data.ownedTrails[trail.id] == true
+	end
+	local dinoModes: { [string]: string } = {}
+	for _, dino in GameConfig.DINOSAURS do
+		dinoModes[dino.id] = data.dinoModes[dino.id] or "StoredInNest"
+	end
+	local unlockedZones: { [string]: boolean } = {}
+	for _, zone in GameConfig.ZONES do
+		unlockedZones[zone.id] = data.unlockedZones[zone.id] == true
+	end
+	local berryCooldowns: { [string]: number } = {}
+	local now = os.time()
+	for _, berryNode in GameConfig.BERRY_NODES do
+		berryCooldowns[berryNode.id] = math.max(0, (data.berryCooldowns[berryNode.id] or 0) - now)
+	end
+	local ownedDinos: { Types.PublicOwnedDino } = {}
+	for _, record in data.ownedDinos do
+		local dino = GameConfig.getDinosaur(record.id)
+		if dino ~= nil then
+			table.insert(ownedDinos, {
+				uid = record.uid,
+				id = record.id,
+				displayName = dino.displayName,
+				ageSeconds = record.ageSeconds,
+				growthSeconds = dino.growthSeconds,
+				stage = GameConfig.getGrowthStage(record.ageSeconds, dino.growthSeconds),
+				mode = record.mode,
+				color = dino.color,
+				mountable = dino.mountable,
+				movementBonus = dino.movementBonus,
+			})
+		end
+	end
+	local nest = GameConfig.getNest(data.nestLevel)
+	return {
+		eggs = data.eggs,
+		nestLevel = data.nestLevel,
+		nestCapacity = nest.capacity,
+		followSlots = nest.followSlots,
+		storedSlots = nest.storedSlots,
+		incomePerSecond = self:getIncomePerSecond(player),
+		hatchCost = GameConfig.getHatchCost(data.hatchCount),
+		dinos = publicDinos,
+		ownedTrails = ownedTrails,
+		equippedTrail = data.equippedTrail,
+		starterEggClaimed = data.starterEggClaimed,
+		followingDinoId = data.followingDinoId,
+		activeDinoUid = data.activeDinoUid,
+		mountedDinoUid = data.mountedDinoUid,
+		isMounted = data.mountedDinoUid ~= nil,
+		berryFood = data.berryFood,
+		ownedDinos = ownedDinos,
+		berryCooldowns = berryCooldowns,
+		dinoModes = dinoModes,
+		unlockedZones = unlockedZones,
+		objective = self:getObjective(player),
+	}
+end
+
+function PlayerDataService.createLeaderstats(self: PlayerDataService, player: Player): ()
+	local existing = player:FindFirstChild("leaderstats")
+	if existing ~= nil and existing:IsA("Folder") then
+		return
+	end
+
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	local eggs = Instance.new("IntValue")
+	eggs.Name = "Eggs"
+	eggs.Parent = leaderstats
+
+	local nest = Instance.new("IntValue")
+	nest.Name = "Nest"
+	nest.Parent = leaderstats
+
+	task.spawn(function()
+		while player.Parent == Players do
+			local data = self:get(player)
+			if data ~= nil then
+				eggs.Value = math.floor(data.eggs)
+				nest.Value = data.nestLevel
+			end
+			task.wait(2)
+		end
+	end)
+end
+
+return PlayerDataService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="19">
+          <Properties>
+            <string name="Name">ReceiptProcessor</string>
+            <string name="Source"><![CDATA[--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ProductConfig = require(Shared.Monetization.ProductConfig)
+
+local ReceiptProcessor = {}
+ReceiptProcessor.__index = ReceiptProcessor
+
+export type ReceiptInfo = {
+	PlayerId: number,
+	ProductId: number,
+	PurchaseId: string,
+}
+
+export type ReceiptProcessor = typeof(setmetatable({} :: {
+	_playerDataService: any,
+	_processed: { [string]: boolean },
+}, ReceiptProcessor))
+
+function ReceiptProcessor.new(playerDataService: any): ReceiptProcessor
+	return setmetatable({
+		_playerDataService = playerDataService,
+		_processed = {},
+	}, ReceiptProcessor)
+end
+
+function ReceiptProcessor.processReceipt(self: ReceiptProcessor, receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
+	local rawPurchaseId = receiptInfo.PurchaseId
+	if typeof(rawPurchaseId) ~= "string" or rawPurchaseId == "" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local purchaseId = rawPurchaseId
+	if self._processed[purchaseId] == true then
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+
+	local playerId = receiptInfo.PlayerId
+	local productId = receiptInfo.ProductId
+	if typeof(playerId) ~= "number" or typeof(productId) ~= "number" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
+	local player = game:GetService("Players"):GetPlayerByUserId(playerId)
+	if player == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if self._playerDataService:hasProcessedReceipt(player, purchaseId) then
+		self._processed[purchaseId] = true
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+
+	for _, product in ProductConfig.DEVELOPER_PRODUCTS do
+		if product.productId == productId and product.productId > 0 then
+			if not self._playerDataService:grantReceiptEggs(player, purchaseId, product.eggs) then
+				return Enum.ProductPurchaseDecision.NotProcessedYet
+			end
+			self._processed[purchaseId] = true
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+	end
+
+	warn(`Unknown developer product receipt: {productId}`)
+	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+return ReceiptProcessor
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="20">
+          <Properties>
+            <string name="Name">WorldService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local Lighting = game:GetService("Lighting")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local WorldService = {}
+local WORLD_FOLDER_NAME = "DinoDashWorld"
+local ASSETS_FOLDER_NAME = "DinoDashAssets"
+local DINO_MODELS_FOLDER_NAME = "DinoModels"
+
+type PartShape = "Block" | "Ball" | "Cylinder"
+type DecorationPart = {
+	name: string,
+	size: Vector3,
+	position: Vector3,
+	color: Color3,
+	material: Enum.Material,
+	shape: PartShape?,
+	orientation: Vector3?,
+	transparency: number?,
+	canCollide: boolean?,
+}
+
+local function ensureFolder(parent: Instance, name: string): Folder
+	local existing = parent:FindFirstChild(name)
+	if existing ~= nil and existing:IsA("Folder") then
+		return existing
+	end
+
+	local folder = Instance.new("Folder")
+	folder.Name = name
+	folder.Parent = parent
+	return folder
+end
+
+local function getWorldFolder(): Folder
+	return ensureFolder(Workspace, WORLD_FOLDER_NAME)
+end
+
+local function getDinoModelsFolder(): Folder
+	local assets = ensureFolder(ReplicatedStorage, ASSETS_FOLDER_NAME)
+	return ensureFolder(assets, DINO_MODELS_FOLDER_NAME)
+end
+
+local function shapeToEnum(shape: PartShape?): Enum.PartType
+	if shape == "Ball" then
+		return Enum.PartType.Ball
+	elseif shape == "Cylinder" then
+		return Enum.PartType.Cylinder
+	end
+	return Enum.PartType.Block
+end
+
+local function ensurePart(parent: Instance, spec: DecorationPart): Part
+	local existing = parent:FindFirstChild(spec.name)
+	local part: Part
+	if existing ~= nil and existing:IsA("Part") then
+		part = existing
+	else
+		part = Instance.new("Part")
+		part.Name = spec.name
+		part.Parent = parent
+	end
+
+	part.Anchored = true
+	part.CanCollide = if spec.canCollide == nil then true else spec.canCollide
+	part.Size = spec.size
+	part.Position = spec.position
+	part.Orientation = spec.orientation or Vector3.zero
+	part.Color = spec.color
+	part.Material = spec.material
+	part.Shape = shapeToEnum(spec.shape)
+	part.Transparency = spec.transparency or 0
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	return part
+end
+
+local function ensureModel(parent: Instance, name: string): Folder
+	return ensureFolder(parent, name)
+end
+
+local function ensureLabel(parent: BasePart, text: string, offset: Vector3?): ()
+	local existing = parent:FindFirstChild("Label")
+	if existing ~= nil and existing:IsA("BillboardGui") then
+		local label = existing:FindFirstChild("Text")
+		if label ~= nil and label:IsA("TextLabel") then
+			label.Text = text
+		end
+		return
+	end
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Label"
+	billboard.Size = UDim2.fromOffset(330, 100)
+	billboard.StudsOffset = offset or Vector3.new(0, 8, 0)
+	billboard.AlwaysOnTop = true
+	billboard.MaxDistance = 160
+	billboard.Parent = parent
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Text"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextStrokeTransparency = 0.2
+	label.Text = text
+	label.Parent = billboard
+end
+
+local function ensurePrompt(parent: BasePart, name: string, actionText: string, objectText: string): ProximityPrompt
+	local existing = parent:FindFirstChild(name)
+	local prompt: ProximityPrompt
+	if existing ~= nil and existing:IsA("ProximityPrompt") then
+		prompt = existing
+	else
+		prompt = Instance.new("ProximityPrompt")
+		prompt.Name = name
+		prompt.Parent = parent
+	end
+	prompt.ActionText = actionText
+	prompt.ObjectText = objectText
+	prompt.KeyboardKeyCode = Enum.KeyCode.E
+	prompt.GamepadKeyCode = Enum.KeyCode.ButtonX
+	prompt.HoldDuration = 0.35
+	prompt.MaxActivationDistance = 16
+	prompt.RequiresLineOfSight = false
+	return prompt
+end
+
+local function ensureSpawn(parent: Instance): SpawnLocation
+	local existing = parent:FindFirstChild("DinoDashSpawn")
+	local spawn: SpawnLocation
+	if existing ~= nil and existing:IsA("SpawnLocation") then
+		spawn = existing
+	else
+		spawn = Instance.new("SpawnLocation")
+		spawn.Name = "DinoDashSpawn"
+		spawn.Parent = parent
+	end
+
+	spawn.Anchored = true
+	spawn.Size = Vector3.new(16, 1, 16)
+	spawn.Position = Vector3.new(0, 9, 34)
+	spawn.Color = Color3.fromRGB(250, 204, 21)
+	spawn.Material = Enum.Material.Neon
+	spawn.Neutral = true
+	spawn.AllowTeamChangeOnTouch = false
+	spawn.Duration = 0
+	spawn.TopSurface = Enum.SurfaceType.Smooth
+	spawn.BottomSurface = Enum.SurfaceType.Smooth
+	return spawn
+end
+
+local function createTree(parent: Instance, index: number, position: Vector3, scale: number): ()
+	ensurePart(parent, {
+		name = `AncientTreeTrunk_{index}`,
+		size = Vector3.new(4 * scale, 26 * scale, 4 * scale),
+		position = position + Vector3.new(0, 13 * scale, 0),
+		color = Color3.fromRGB(104, 62, 28),
+		material = Enum.Material.Wood,
+	})
+	for layer = 1, 3 do
+		ensurePart(parent, {
+			name = `AncientTreeCanopy_{index}_{layer}`,
+			size = Vector3.new((26 - layer * 3) * scale, (13 - layer * 2) * scale, (26 - layer * 3) * scale),
+			position = position + Vector3.new(0, (27 + layer * 6) * scale, 0),
+			color = Color3.fromRGB(28, 130 + layer * 15, 66),
+			material = Enum.Material.Grass,
+			shape = "Ball",
+		})
+	end
+end
+
+local function createBone(parent: Instance, index: number, position: Vector3, yaw: number): ()
+	ensurePart(parent, {
+		name = `FossilBone_{index}`,
+		size = Vector3.new(34, 4, 4),
+		position = position,
+		color = Color3.fromRGB(245, 245, 220),
+		material = Enum.Material.SmoothPlastic,
+		orientation = Vector3.new(0, yaw, 10),
+	})
+	ensurePart(parent, {
+		name = `FossilBoneKnobA_{index}`,
+		size = Vector3.new(8, 8, 8),
+		position = position + Vector3.new(math.cos(math.rad(yaw)) * 17, 0, -math.sin(math.rad(yaw)) * 17),
+		color = Color3.fromRGB(245, 245, 220),
+		material = Enum.Material.SmoothPlastic,
+		shape = "Ball",
+	})
+	ensurePart(parent, {
+		name = `FossilBoneKnobB_{index}`,
+		size = Vector3.new(8, 8, 8),
+		position = position - Vector3.new(math.cos(math.rad(yaw)) * 17, 0, -math.sin(math.rad(yaw)) * 17),
+		color = Color3.fromRGB(245, 245, 220),
+		material = Enum.Material.SmoothPlastic,
+		shape = "Ball",
+	})
+end
+
+local function createEggNest(parent: Instance, nestId: string, displayName: string, position: Vector3, color: Color3, promptText: string): ()
+	local nest = ensurePart(parent, {
+		name = `{nestId}_NestBowl`,
+		size = Vector3.new(24, 6, 24),
+		position = position,
+		color = Color3.fromRGB(120, 53, 15),
+		material = Enum.Material.Wood,
+		shape = "Cylinder",
+		orientation = Vector3.new(0, 0, 90),
+	})
+	nest:SetAttribute("EggNestId", nestId)
+	ensureLabel(nest, displayName, Vector3.new(0, 8, 0))
+
+	local egg = ensurePart(parent, {
+		name = `{nestId}_Egg`,
+		size = Vector3.new(10, 14, 10),
+		position = position + Vector3.new(0, 9, 0),
+		color = color,
+		material = Enum.Material.Neon,
+		shape = "Ball",
+		canCollide = false,
+	})
+	egg:SetAttribute("EggNestId", nestId)
+	ensurePrompt(egg, "CollectEggPrompt", promptText, displayName)
+end
+
+local function createBerryBush(parent: Instance, berryNodeId: string, displayName: string, position: Vector3): ()
+	local bush = ensurePart(parent, {
+		name = `{berryNodeId}_BerryBush`,
+		size = Vector3.new(12, 8, 12),
+		position = position + Vector3.new(0, 4, 0),
+		color = Color3.fromRGB(22, 163, 74),
+		material = Enum.Material.Grass,
+		shape = "Ball",
+	})
+	bush:SetAttribute("BerryNodeId", berryNodeId)
+	ensureLabel(bush, `{displayName}\nGather dino snacks`, Vector3.new(0, 8, 0))
+	ensurePrompt(bush, "CollectBerryPrompt", "Gather", displayName)
+
+	for berry = 1, 5 do
+		local angle = math.rad(berry * 72)
+		local berryPart = ensurePart(parent, {
+			name = `{berryNodeId}_Berry_{berry}`,
+			size = Vector3.new(2.1, 2.1, 2.1),
+			position = position + Vector3.new(math.cos(angle) * 4, 7 + (berry % 2), math.sin(angle) * 4),
+			color = Color3.fromRGB(239, 68, 68),
+			material = Enum.Material.Neon,
+			shape = "Ball",
+			canCollide = false,
+		})
+		berryPart:SetAttribute("BerryNodeId", berryNodeId)
+	end
+end
+
+local function ensureTemplatePart(parent: Model, name: string, size: Vector3, cframe: CFrame, color: Color3): Part
+	local existing = parent:FindFirstChild(name)
+	local part: Part
+	if existing ~= nil and existing:IsA("Part") then
+		part = existing
+	else
+		part = Instance.new("Part")
+		part.Name = name
+		part.Parent = parent
+	end
+	part.Anchored = true
+	part.CanCollide = false
+	part.Size = size
+	part.CFrame = cframe
+	part.Color = color
+	part.Material = Enum.Material.SmoothPlastic
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	return part
+end
+
+local function ensureDinoTemplate(parent: Instance, name: string, scale: number, color: Color3): ()
+	local existing = parent:FindFirstChild(name)
+	local model: Model
+	if existing ~= nil and existing:IsA("Model") then
+		model = existing
+	else
+		model = Instance.new("Model")
+		model.Name = name
+		model.Parent = parent
+	end
+	model:SetAttribute("DinoDashTemplate", true)
+	model:SetAttribute("TemplateVersion", 1)
+	model:SetAttribute("ReplaceWithAuthoredArt", true)
+
+	local body = ensureTemplatePart(model, "Body", Vector3.new(4.8, 2.4, 7.2) * scale, CFrame.new(0, 0, 0), color)
+	model.PrimaryPart = body
+	ensureTemplatePart(model, "Head", Vector3.new(2.8, 2.2, 2.8) * scale, CFrame.new(0, 0.6 * scale, -4.4 * scale), color)
+	ensureTemplatePart(model, "Tail", Vector3.new(1.4, 1.4, 5.4) * scale, CFrame.new(0, 0.25 * scale, 5.6 * scale) * CFrame.Angles(math.rad(-8), 0, 0), color)
+	ensureTemplatePart(model, "LeftLeg", Vector3.new(1.1, 2.4, 1.1) * scale, CFrame.new(-1.35 * scale, -2 * scale, -1.5 * scale), color)
+	ensureTemplatePart(model, "RightLeg", Vector3.new(1.1, 2.4, 1.1) * scale, CFrame.new(1.35 * scale, -2 * scale, -1.5 * scale), color)
+	ensureTemplatePart(model, "BackSpike", Vector3.new(0.8, 2.8, 0.8) * scale, CFrame.new(0, 2.1 * scale, -0.6 * scale), Color3.fromRGB(255, 255, 255))
+	if name:find("Adult") ~= nil then
+		ensureTemplatePart(model, "RideSaddle", Vector3.new(3.8, 0.7, 3.6) * scale, CFrame.new(0, 1.65 * scale, -0.2 * scale), Color3.fromRGB(92, 51, 23))
+	end
+end
+
+local function buildDinoModelTemplates(): ()
+	local models = getDinoModelsFolder()
+	ensureDinoTemplate(models, "StarterRaptor_Baby", 0.82, Color3.fromRGB(74, 222, 128))
+	ensureDinoTemplate(models, "StarterRaptor_Juvenile", 1.25, Color3.fromRGB(74, 222, 128))
+	ensureDinoTemplate(models, "StarterRaptor_Adult", 1.8, Color3.fromRGB(74, 222, 128))
+end
+
+local function createZoneGate(parent: Instance, gateId: string, displayName: string, position: Vector3, color: Color3, required: string): ()
+	local frame = ensurePart(parent, {
+		name = `{gateId}_GateFrame`,
+		size = Vector3.new(54, 42, 8),
+		position = position + Vector3.new(0, 21, 0),
+		color = color,
+		material = Enum.Material.Cobblestone,
+		transparency = 0.1,
+	})
+	frame:SetAttribute("ZoneId", gateId)
+	ensureLabel(frame, `{displayName}\n{required}`, Vector3.new(0, 30, 0))
+
+	local door = ensurePart(parent, {
+		name = `{gateId}_GateDoor`,
+		size = Vector3.new(44, 28, 4),
+		position = position + Vector3.new(0, 16, -2),
+		color = Color3.fromRGB(15, 23, 42),
+		material = Enum.Material.ForceField,
+		transparency = 0.25,
+	})
+	door:SetAttribute("ZoneId", gateId)
+	ensurePrompt(door, "UnlockZonePrompt", "Unlock", displayName)
+end
+
+function WorldService.build(): ()
+	buildDinoModelTemplates()
+	local world = getWorldFolder()
+	Workspace.FallenPartsDestroyHeight = -500
+	pcall(function()
+		Lighting.ClockTime = 14
+		Lighting.Brightness = 2.7
+		Lighting.EnvironmentDiffuseScale = 0.9
+		Lighting.EnvironmentSpecularScale = 0.45
+		Lighting.FogEnd = 950
+		Lighting.FogColor = Color3.fromRGB(181, 231, 205)
+	end)
+
+	ensurePart(world, {
+		name = "StarterValleyIsland",
+		size = Vector3.new(780, 18, 780),
+		position = Vector3.new(0, -4, 0),
+		color = Color3.fromRGB(53, 154, 74),
+		material = Enum.Material.Grass,
+	})
+	ensurePart(world, {
+		name = "StarterValleyBackRidge",
+		size = Vector3.new(760, 60, 62),
+		position = Vector3.new(0, 18, -365),
+		color = Color3.fromRGB(68, 117, 72),
+		material = Enum.Material.Rock,
+	})
+	ensurePart(world, {
+		name = "LeftCliffWall",
+		size = Vector3.new(60, 48, 620),
+		position = Vector3.new(-370, 14, -25),
+		color = Color3.fromRGB(71, 85, 105),
+		material = Enum.Material.Rock,
+	})
+	ensurePart(world, {
+		name = "RightCliffWall",
+		size = Vector3.new(60, 48, 620),
+		position = Vector3.new(370, 14, -25),
+		color = Color3.fromRGB(71, 85, 105),
+		material = Enum.Material.Rock,
+	})
+
+	local cave = ensureModel(world, "StarterNestCave")
+	ensurePart(cave, {
+		name = "CaveFloor",
+		size = Vector3.new(112, 7, 88),
+		position = Vector3.new(0, 4, 0),
+		color = Color3.fromRGB(146, 64, 14),
+		material = Enum.Material.Ground,
+	})
+	ensurePart(cave, {
+		name = "CaveBackWall",
+		size = Vector3.new(120, 54, 15),
+		position = Vector3.new(0, 28, -44),
+		color = Color3.fromRGB(87, 83, 78),
+		material = Enum.Material.Rock,
+	})
+	ensurePart(cave, {
+		name = "CaveLeftWall",
+		size = Vector3.new(15, 42, 88),
+		position = Vector3.new(-60, 23, 0),
+		color = Color3.fromRGB(87, 83, 78),
+		material = Enum.Material.Rock,
+	})
+	ensurePart(cave, {
+		name = "CaveRightWall",
+		size = Vector3.new(15, 42, 88),
+		position = Vector3.new(60, 23, 0),
+		color = Color3.fromRGB(87, 83, 78),
+		material = Enum.Material.Rock,
+	})
+	ensurePart(cave, {
+		name = "CaveRoofArch",
+		size = Vector3.new(132, 34, 96),
+		position = Vector3.new(0, 54, -8),
+		color = Color3.fromRGB(68, 64, 60),
+		material = Enum.Material.Slate,
+		shape = "Cylinder",
+		orientation = Vector3.new(0, 0, 90),
+	})
+	local caveSign = ensurePart(cave, {
+		name = "NestCaveSign",
+		size = Vector3.new(42, 12, 3),
+		position = Vector3.new(0, 25, 48),
+		color = Color3.fromRGB(120, 53, 15),
+		material = Enum.Material.WoodPlanks,
+	})
+	ensureLabel(caveSign, "YOUR DINO NEST\nCollect your first egg", Vector3.new(0, 12, 0))
+
+	ensureSpawn(world)
+	createEggNest(world, "starter-egg", "STARTER EGG\nWalk here or press Starter Egg", Vector3.new(0, 10, 78), Color3.fromRGB(250, 250, 210), "Collect")
+	createEggNest(world, "valley-nest", "VALLEY EGG NEST\nFind more dinos", Vector3.new(116, 9, 134), Color3.fromRGB(191, 219, 254), "Search")
+	createBerryBush(world, "cave-berry", "NEST BERRIES", Vector3.new(-36, 8, 52))
+	createBerryBush(world, "path-berry-a", "PATH BERRIES", Vector3.new(-62, 8, 126))
+	createBerryBush(world, "path-berry-b", "SUNNY BERRIES", Vector3.new(48, 8, 176))
+	createBerryBush(world, "valley-berry", "VALLEY BERRY PATCH", Vector3.new(144, 8, 92))
+	createBerryBush(world, "jungle-berry", "JUNGLE BERRY PATCH", Vector3.new(0, 8, 330))
+
+	local starterArrow = ensurePart(world, {
+		name = "StarterEggArrow",
+		size = Vector3.new(24, 3, 10),
+		position = Vector3.new(0, 18, 50),
+		color = Color3.fromRGB(250, 204, 21),
+		material = Enum.Material.Neon,
+		orientation = Vector3.new(0, 0, 0),
+		canCollide = false,
+	})
+	ensureLabel(starterArrow, "FIRST EGG THIS WAY", Vector3.new(0, 7, 0))
+
+	ensurePart(world, {
+		name = "StarterPathFromCave",
+		size = Vector3.new(34, 1, 230),
+		position = Vector3.new(0, 6, 152),
+		color = Color3.fromRGB(217, 168, 91),
+		material = Enum.Material.Ground,
+	})
+	ensurePart(world, {
+		name = "PathToValleyNest",
+		size = Vector3.new(28, 1, 170),
+		position = Vector3.new(72, 6.2, 158),
+		color = Color3.fromRGB(217, 168, 91),
+		material = Enum.Material.Ground,
+		orientation = Vector3.new(0, -42, 0),
+	})
+
+	createZoneGate(world, "jungle-grove", "JUNGLE GROVE", Vector3.new(0, 4, 285), Color3.fromRGB(22, 101, 52), "Nest Lv.2 + 250 eggs")
+	createZoneGate(world, "volcano-ridge", "VOLCANO RIDGE", Vector3.new(-235, 4, 48), Color3.fromRGB(127, 29, 29), "Nest Lv.4 + 4000 eggs")
+	createZoneGate(world, "ancient-ruins", "ANCIENT RUINS", Vector3.new(235, 4, 48), Color3.fromRGB(88, 28, 135), "Nest Lv.5 + 20000 eggs")
+
+	ensurePart(world, {
+		name = "FarVolcanoSilhouette",
+		size = Vector3.new(130, 86, 130),
+		position = Vector3.new(-250, 42, -246),
+		color = Color3.fromRGB(68, 64, 60),
+		material = Enum.Material.Slate,
+		shape = "Cylinder",
+		orientation = Vector3.new(0, 0, 90),
+	})
+	ensurePart(world, {
+		name = "VolcanoGlow",
+		size = Vector3.new(42, 4, 42),
+		position = Vector3.new(-250, 88, -246),
+		color = Color3.fromRGB(239, 68, 68),
+		material = Enum.Material.Neon,
+		shape = "Cylinder",
+		orientation = Vector3.new(0, 0, 90),
+	})
+	ensurePart(world, {
+		name = "AncientRuinsSilhouette",
+		size = Vector3.new(150, 10, 70),
+		position = Vector3.new(248, 10, -228),
+		color = Color3.fromRGB(161, 161, 170),
+		material = Enum.Material.Cobblestone,
+	})
+	for pillar = 1, 6 do
+		ensurePart(world, {
+			name = `RuinsTallPillar_{pillar}`,
+			size = Vector3.new(10, 52 + (pillar % 2) * 18, 10),
+			position = Vector3.new(190 + pillar * 19, 34, -230),
+			color = Color3.fromRGB(212, 212, 216),
+			material = Enum.Material.Marble,
+		})
+	end
+
+	local treePositions = {
+		Vector3.new(-160, 7, 126), Vector3.new(-128, 7, 184), Vector3.new(-76, 7, 240),
+		Vector3.new(142, 7, 72), Vector3.new(178, 7, 140), Vector3.new(210, 7, 212),
+		Vector3.new(-212, 7, -34), Vector3.new(212, 7, -42), Vector3.new(-108, 7, -176),
+		Vector3.new(112, 7, -162), Vector3.new(-284, 7, 168), Vector3.new(286, 7, 170),
+	}
+	for index, position in treePositions do
+		createTree(world, index, position, 0.85 + (index % 4) * 0.14)
+	end
+	for bone = 1, 5 do
+		createBone(world, bone, Vector3.new(-160 + bone * 52, 13, 218 + (bone % 2) * 28), bone * 31)
+	end
+
+	ensurePart(world, {
+		name = "NestUpgradePedestal",
+		size = Vector3.new(22, 5, 22),
+		position = Vector3.new(33, 9, -8),
+		color = Color3.fromRGB(245, 158, 11),
+		material = Enum.Material.Neon,
+		shape = "Cylinder",
+		orientation = Vector3.new(0, 0, 90),
+	})
+	local feedStation = ensurePart(world, {
+		name = "DinoFeedStation",
+		size = Vector3.new(24, 5, 18),
+		position = Vector3.new(-33, 9, 12),
+		color = Color3.fromRGB(34, 197, 94),
+		material = Enum.Material.WoodPlanks,
+	})
+	ensureLabel(feedStation, "FEED & RAISE\nGrow baby dinos", Vector3.new(0, 10, 0))
+	ensurePrompt(feedStation, "FeedDinoPrompt", "Feed", "Dino Feed Station")
+	ensurePart(world, {
+		name = "AdultRaptorPreview",
+		size = Vector3.new(10, 5, 16),
+		position = Vector3.new(-48, 13, 32),
+		color = Color3.fromRGB(22, 163, 74),
+		material = Enum.Material.SmoothPlastic,
+	})
+	ensurePart(world, {
+		name = "StoredDinoBed_1",
+		size = Vector3.new(18, 3, 14),
+		position = Vector3.new(-34, 9, -17),
+		color = Color3.fromRGB(202, 138, 4),
+		material = Enum.Material.WoodPlanks,
+	})
+	ensurePart(world, {
+		name = "StoredDinoBed_2",
+		size = Vector3.new(18, 3, 14),
+		position = Vector3.new(0, 9, -23),
+		color = Color3.fromRGB(202, 138, 4),
+		material = Enum.Material.WoodPlanks,
+	})
+end
+
+function WorldService.getEggNestPosition(nestId: string): Vector3?
+	local world = getWorldFolder()
+	local egg = world:FindFirstChild(`{nestId}_Egg`, true)
+	if egg ~= nil and egg:IsA("BasePart") then
+		return egg.Position
+	end
+	return nil
+end
+
+function WorldService.getZoneGatePosition(zoneId: string): Vector3?
+	local world = getWorldFolder()
+	local door = world:FindFirstChild(`{zoneId}_GateDoor`, true)
+	if door ~= nil and door:IsA("BasePart") then
+		return door.Position
+	end
+	return nil
+end
+
+function WorldService.getBerryNodePosition(berryNodeId: string): Vector3?
+	local world = getWorldFolder()
+	local bush = world:FindFirstChild(`{berryNodeId}_BerryBush`, true)
+	if bush ~= nil and bush:IsA("BasePart") then
+		return bush.Position
+	end
+	return nil
+end
+
+function WorldService.getFeedStationPosition(): Vector3?
+	local world = getWorldFolder()
+	local station = world:FindFirstChild("DinoFeedStation", true)
+	if station ~= nil and station:IsA("BasePart") then
+		return station.Position
+	end
+	return nil
+end
+
+function WorldService.connectInteractions(onEggNest: (Player, string) -> (), onZoneGate: (Player, string) -> (), onBerryNode: (Player, string) -> (), onFeedDino: (Player) -> ()): ()
+	local world = getWorldFolder()
+	for _, descendant in world:GetDescendants() do
+		if descendant:IsA("ProximityPrompt") then
+			if descendant.Name == "CollectEggPrompt" then
+				descendant.Triggered:Connect(function(player: Player)
+					local parent = descendant.Parent
+					local nestId = if parent ~= nil then parent:GetAttribute("EggNestId") else nil
+					if typeof(nestId) == "string" then
+						onEggNest(player, nestId)
+					end
+				end)
+			elseif descendant.Name == "UnlockZonePrompt" then
+				descendant.Triggered:Connect(function(player: Player)
+					local parent = descendant.Parent
+					local zoneId = if parent ~= nil then parent:GetAttribute("ZoneId") else nil
+					if typeof(zoneId) == "string" then
+						onZoneGate(player, zoneId)
+					end
+				end)
+			elseif descendant.Name == "CollectBerryPrompt" then
+				descendant.Triggered:Connect(function(player: Player)
+					local parent = descendant.Parent
+					local berryNodeId = if parent ~= nil then parent:GetAttribute("BerryNodeId") else nil
+					if typeof(berryNodeId) == "string" then
+						onBerryNode(player, berryNodeId)
+					end
+				end)
+			elseif descendant.Name == "FeedDinoPrompt" then
+				descendant.Triggered:Connect(function(player: Player)
+					onFeedDino(player)
+				end)
+			end
+		end
+	end
+end
+
+return WorldService
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="21">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="22">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="Folder" referent="23">
+        <Properties>
+          <string name="Name">Client</string>
+        </Properties>
+        <Item class="LocalScript" referent="24">
+          <Properties>
+            <string name="Name">Main</string>
+            <string name="Source"><![CDATA[--!strict
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+local remotes = ReplicatedStorage:WaitForChild("DinoDashRemotes")
+local actionEvent = remotes:WaitForChild("Action") :: RemoteEvent
+local stateEvent = remotes:WaitForChild("State") :: RemoteEvent
+local requestState = remotes:WaitForChild("RequestState") :: RemoteFunction
+local dinoModelsFolder = ReplicatedStorage:WaitForChild("DinoDashAssets"):WaitForChild("DinoModels")
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "DinoDashHud"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local root = Instance.new("Frame")
+root.Name = "Root"
+root.AnchorPoint = Vector2.new(0.5, 0)
+root.Position = UDim2.fromScale(0.5, 0.02)
+root.Size = UDim2.new(0.92, 0, 0, 156)
+root.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
+root.BackgroundTransparency = 0.18
+root.Parent = gui
+
+local sizeConstraint = Instance.new("UISizeConstraint")
+sizeConstraint.MinSize = Vector2.new(310, 138)
+sizeConstraint.MaxSize = Vector2.new(980, 168)
+sizeConstraint.Parent = root
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 16)
+corner.Parent = root
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 8)
+padding.PaddingBottom = UDim.new(0, 8)
+padding.PaddingLeft = UDim.new(0, 10)
+padding.PaddingRight = UDim.new(0, 10)
+padding.Parent = root
+
+local stats = Instance.new("TextLabel")
+stats.Name = "Stats"
+stats.BackgroundTransparency = 1
+stats.Position = UDim2.fromOffset(0, 0)
+stats.Size = UDim2.new(1, 0, 0, 28)
+stats.Font = Enum.Font.GothamBold
+stats.TextColor3 = Color3.fromRGB(250, 204, 21)
+stats.TextScaled = true
+stats.TextXAlignment = Enum.TextXAlignment.Left
+stats.Text = "Loading your dino nest..."
+stats.Parent = root
+
+local objective = Instance.new("TextLabel")
+objective.Name = "Objective"
+objective.BackgroundTransparency = 1
+objective.Position = UDim2.fromOffset(0, 28)
+objective.Size = UDim2.new(1, 0, 0, 28)
+objective.Font = Enum.Font.GothamMedium
+objective.TextColor3 = Color3.fromRGB(226, 232, 240)
+objective.TextScaled = true
+objective.TextXAlignment = Enum.TextXAlignment.Left
+objective.Text = "Objective: collect your first egg."
+objective.Parent = root
+
+local buttonRow = Instance.new("Frame")
+buttonRow.Name = "Buttons"
+buttonRow.BackgroundTransparency = 1
+buttonRow.Position = UDim2.fromOffset(0, 64)
+buttonRow.Size = UDim2.new(1, 0, 0, 38)
+buttonRow.Parent = root
+
+local list = Instance.new("UIListLayout")
+list.FillDirection = Enum.FillDirection.Horizontal
+list.HorizontalAlignment = Enum.HorizontalAlignment.Left
+list.VerticalAlignment = Enum.VerticalAlignment.Center
+list.Padding = UDim.new(0, 8)
+list.Parent = buttonRow
+
+local function makeButton(label: string, color: Color3): TextButton
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0, 112, 1, 0)
+	button.BackgroundColor3 = color
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Font = Enum.Font.GothamBold
+	button.TextScaled = true
+	button.Text = label
+	button.AutoButtonColor = true
+	button.Parent = buttonRow
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 10)
+	c.Parent = button
+	return button
+end
+
+local hatchButton = makeButton("Hatch", Color3.fromRGB(34, 197, 94))
+local upgradeButton = makeButton("Upgrade Nest", Color3.fromRGB(245, 158, 11))
+local dinoModeButton = makeButton("Store Dino", Color3.fromRGB(59, 130, 246))
+local valleyNestButton = makeButton("Starter Egg", Color3.fromRGB(20, 184, 166))
+local feedButton = makeButton("Feed Dino", Color3.fromRGB(132, 204, 22))
+local berryButton = makeButton("Berries", Color3.fromRGB(244, 63, 94))
+local mountButton = makeButton("Mount", Color3.fromRGB(168, 85, 247))
+local dexButton = makeButton("DinoDex", Color3.fromRGB(14, 165, 233))
+
+local dinoInfo = Instance.new("TextLabel")
+dinoInfo.Name = "DinoInfo"
+dinoInfo.BackgroundTransparency = 1
+dinoInfo.Position = UDim2.fromOffset(0, 108)
+dinoInfo.Size = UDim2.new(1, 0, 0, 28)
+dinoInfo.Font = Enum.Font.GothamMedium
+dinoInfo.TextColor3 = Color3.fromRGB(190, 242, 100)
+dinoInfo.TextScaled = true
+dinoInfo.TextXAlignment = Enum.TextXAlignment.Left
+dinoInfo.Text = "DinoDex: hatch a starter dino."
+dinoInfo.Parent = root
+
+local hasLoadedState = false
+local latestState: any = nil
+local currentPet: Model? = nil
+local dexOpen = false
+
+local berryNodePositions: { [string]: Vector3 } = {
+	["cave-berry"] = Vector3.new(-36, 12, 52),
+	["path-berry-a"] = Vector3.new(-62, 12, 126),
+	["path-berry-b"] = Vector3.new(48, 12, 176),
+	["valley-berry"] = Vector3.new(144, 12, 92),
+	["jungle-berry"] = Vector3.new(0, 12, 330),
+}
+
+local dexPanel = Instance.new("Frame")
+dexPanel.Name = "DinoDexPanel"
+dexPanel.AnchorPoint = Vector2.new(1, 0)
+dexPanel.Position = UDim2.new(0.98, 0, 0, 188)
+dexPanel.Size = UDim2.fromOffset(340, 300)
+dexPanel.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
+dexPanel.BackgroundTransparency = 0.08
+dexPanel.Visible = false
+dexPanel.Parent = gui
+
+local dexCorner = Instance.new("UICorner")
+dexCorner.CornerRadius = UDim.new(0, 14)
+dexCorner.Parent = dexPanel
+
+local dexPadding = Instance.new("UIPadding")
+dexPadding.PaddingTop = UDim.new(0, 10)
+dexPadding.PaddingBottom = UDim.new(0, 10)
+dexPadding.PaddingLeft = UDim.new(0, 10)
+dexPadding.PaddingRight = UDim.new(0, 10)
+dexPadding.Parent = dexPanel
+
+local dexTitle = Instance.new("TextLabel")
+dexTitle.Name = "Title"
+dexTitle.BackgroundTransparency = 1
+dexTitle.Size = UDim2.new(1, 0, 0, 30)
+dexTitle.Font = Enum.Font.GothamBold
+dexTitle.TextColor3 = Color3.fromRGB(250, 204, 21)
+dexTitle.TextScaled = true
+dexTitle.TextXAlignment = Enum.TextXAlignment.Left
+dexTitle.Text = "DinoDex"
+dexTitle.Parent = dexPanel
+
+local dexList = Instance.new("TextLabel")
+dexList.Name = "List"
+dexList.BackgroundTransparency = 1
+dexList.Position = UDim2.fromOffset(0, 38)
+dexList.Size = UDim2.new(1, 0, 1, -38)
+dexList.Font = Enum.Font.GothamMedium
+dexList.TextColor3 = Color3.fromRGB(226, 232, 240)
+dexList.TextSize = 16
+dexList.TextWrapped = true
+dexList.TextXAlignment = Enum.TextXAlignment.Left
+dexList.TextYAlignment = Enum.TextYAlignment.Top
+dexList.Text = "Hatch dinos to fill your collection."
+dexList.Parent = dexPanel
+
+local DINO_COLORS: { [string]: Color3 } = {
+	["starter-raptor"] = Color3.fromRGB(74, 222, 128),
+	["tri-horn"] = Color3.fromRGB(96, 165, 250),
+	["bronto-buddy"] = Color3.fromRGB(168, 85, 247),
+	["shadow-rex"] = Color3.fromRGB(30, 41, 59),
+	["golden-ptero"] = Color3.fromRGB(250, 204, 21),
+}
+
+local DINO_NAMES: { [string]: string } = {
+	["starter-raptor"] = "Starter Raptor",
+	["tri-horn"] = "Tri-Horn",
+	["bronto-buddy"] = "Bronto",
+	["shadow-rex"] = "Shadow Rex",
+	["golden-ptero"] = "Golden Ptero",
+}
+
+local DINO_MODEL_NAMES: { [string]: string } = {
+	["starter-raptor"] = "StarterRaptor",
+	["tri-horn"] = "TriHorn",
+	["bronto-buddy"] = "BrontoBuddy",
+	["shadow-rex"] = "ShadowRex",
+	["golden-ptero"] = "GoldenPtero",
+}
+
+local RARITY_COLORS: { [string]: Color3 } = {
+	Common = Color3.fromRGB(148, 163, 184),
+	Rare = Color3.fromRGB(96, 165, 250),
+	Epic = Color3.fromRGB(168, 85, 247),
+	Legendary = Color3.fromRGB(250, 204, 21),
+}
+
+local function send(payload: { [string]: any }): ()
+	actionEvent:FireServer(payload)
+end
+
+local function formatNumber(value: number): string
+	if value >= 1_000_000 then
+		return string.format("%.1fM", value / 1_000_000)
+	elseif value >= 1_000 then
+		return string.format("%.1fK", value / 1_000)
+	end
+	return tostring(math.floor(value))
+end
+
+local function getFirstOwnedDino(state: any): string?
+	local dinos = state.dinos
+	if typeof(dinos) ~= "table" then
+		return nil
+	end
+	for _, dinoId in { "starter-raptor", "tri-horn", "bronto-buddy", "shadow-rex", "golden-ptero" } do
+		if (dinos[dinoId] or 0) > 0 then
+			return dinoId
+		end
+	end
+	return nil
+end
+
+local function findNearestBerryNode(): string?
+	local character = player.Character
+	if character == nil then
+		return nil
+	end
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if rootPart == nil or not rootPart:IsA("BasePart") then
+		return nil
+	end
+	local bestNodeId: string? = nil
+	local bestDistance = math.huge
+	for nodeId, position in berryNodePositions do
+		local distance = (rootPart.Position - position).Magnitude
+		if distance < bestDistance then
+			bestNodeId = nodeId
+			bestDistance = distance
+		end
+	end
+	if bestDistance > 32 then
+		return nil
+	end
+	return bestNodeId
+end
+
+local function buildDexText(state: any): string
+	local ownedCounts = if typeof(state.dinos) == "table" then state.dinos else {}
+	local ownedDinos = if typeof(state.ownedDinos) == "table" then state.ownedDinos else {}
+	local lines = table.create(8)
+	table.insert(lines, `Snacks: {state.berryFood or 0}  •  Collection: {#ownedDinos}/{state.nestCapacity or 8}`)
+	for _, dinoId in { "starter-raptor", "tri-horn", "bronto-buddy", "shadow-rex", "golden-ptero" } do
+		local count = ownedCounts[dinoId] or 0
+		local name = DINO_NAMES[dinoId] or dinoId
+		if count > 0 then
+			local bestStage = "Baby"
+			for _, owned in ownedDinos do
+				if typeof(owned) == "table" and owned.id == dinoId and typeof(owned.stage) == "string" then
+					bestStage = owned.stage
+					if bestStage == "Adult" then
+						break
+					end
+				end
+			end
+			table.insert(lines, `✅ {name} x{count} — best: {bestStage}`)
+		else
+			table.insert(lines, `🔒 {name} — hatch from egg nests`)
+		end
+	end
+	local cooldowns = if typeof(state.berryCooldowns) == "table" then state.berryCooldowns else {}
+	table.insert(lines, "")
+	table.insert(lines, `Berry regrow: cave {cooldowns["cave-berry"] or 0}s • valley {cooldowns["valley-berry"] or 0}s`)
+	return table.concat(lines, "\n")
+end
+
+local function makePetPart(parent: Model, name: string, size: Vector3, offset: CFrame, color: Color3): Part
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.Color = color
+	part.Material = Enum.Material.SmoothPlastic
+	part.CanCollide = false
+	part.Anchored = true
+	part.CFrame = offset
+	part.Parent = parent
+	return part
+end
+
+local function setModelPartsNonColliding(model: Model): ()
+	for _, descendant in model:GetDescendants() do
+		if descendant:IsA("BasePart") then
+			descendant.Anchored = true
+			descendant.CanCollide = false
+			descendant.CanTouch = false
+		end
+	end
+end
+
+local function cloneDinoTemplate(dinoId: string, stage: string?): Model?
+	local modelPrefix = DINO_MODEL_NAMES[dinoId]
+	if modelPrefix == nil then
+		return nil
+	end
+	local template = dinoModelsFolder:FindFirstChild(`{modelPrefix}_{stage or "Baby"}`)
+	if template == nil or not template:IsA("Model") then
+		return nil
+	end
+	local pet = template:Clone()
+	pet.Name = `DinoPet_{dinoId}_{stage or "Baby"}`
+	local body = pet:FindFirstChild("Body", true)
+	if body ~= nil and body:IsA("BasePart") then
+		pet.PrimaryPart = body
+	elseif pet.PrimaryPart == nil then
+		local firstPart = pet:FindFirstChildWhichIsA("BasePart", true)
+		if firstPart ~= nil then
+			pet.PrimaryPart = firstPart
+		end
+	end
+	setModelPartsNonColliding(pet)
+	return pet
+end
+
+local function addPetNameplate(pet: Model, dinoId: string, stage: string?): ()
+	local body = pet.PrimaryPart
+	if body == nil then
+		return
+	end
+	local old = body:FindFirstChild("Nameplate")
+	if old ~= nil then
+		old:Destroy()
+	end
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Nameplate"
+	billboard.Size = UDim2.fromOffset(190, 46)
+	billboard.StudsOffset = Vector3.new(0, if stage == "Adult" then 9 else 5, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = body
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextStrokeTransparency = 0.25
+	label.Text = `{DINO_NAMES[dinoId] or "Dino"} • {stage or "Baby"}`
+	label.Parent = billboard
+end
+
+local function createGeneratedPet(dinoId: string, stage: string?): Model
+	local color = DINO_COLORS[dinoId] or Color3.fromRGB(74, 222, 128)
+	local scale = if stage == "Adult" then 1.8 elseif stage == "Juvenile" then 1.25 else 0.82
+	local pet = Instance.new("Model")
+	pet.Name = `DinoPet_{dinoId}_{stage or "Baby"}`
+
+	local body = makePetPart(pet, "Body", Vector3.new(4.8, 2.4, 7.2) * scale, CFrame.new(0, 0, 0), color)
+	pet.PrimaryPart = body
+	makePetPart(pet, "Head", Vector3.new(2.8, 2.2, 2.8) * scale, CFrame.new(0, 0.6 * scale, -4.4 * scale), color)
+	makePetPart(pet, "Tail", Vector3.new(1.4, 1.4, 5.4) * scale, CFrame.new(0, 0.25 * scale, 5.6 * scale) * CFrame.Angles(math.rad(-8), 0, 0), color)
+	makePetPart(pet, "LeftLeg", Vector3.new(1.1, 2.4, 1.1) * scale, CFrame.new(-1.35 * scale, -2 * scale, -1.5 * scale), color)
+	makePetPart(pet, "RightLeg", Vector3.new(1.1, 2.4, 1.1) * scale, CFrame.new(1.35 * scale, -2 * scale, -1.5 * scale), color)
+	makePetPart(pet, "BackSpike", Vector3.new(0.8, 2.8, 0.8) * scale, CFrame.new(0, 2.1 * scale, -0.6 * scale), Color3.fromRGB(255, 255, 255))
+	if stage == "Adult" then
+		makePetPart(pet, "RideSaddle", Vector3.new(3.8, 0.7, 3.6) * scale, CFrame.new(0, 1.65 * scale, -0.2 * scale), Color3.fromRGB(92, 51, 23))
+	end
+	return pet
+end
+
+local function ensurePet(dinoId: string?, stage: string?): ()
+	if dinoId == nil then
+		if currentPet ~= nil then
+			currentPet:Destroy()
+			currentPet = nil
+		end
+		return
+	end
+	local petName = `DinoPet_{dinoId}_{stage or "Baby"}`
+	if currentPet ~= nil and currentPet.Name == petName then
+		return
+	end
+	if currentPet ~= nil then
+		currentPet:Destroy()
+	end
+
+	local pet = cloneDinoTemplate(dinoId, stage) or createGeneratedPet(dinoId, stage)
+	pet.Parent = workspace
+	addPetNameplate(pet, dinoId, stage)
+	currentPet = pet
+end
+
+local function getCharacterEffectPosition(): Vector3
+	local character = player.Character
+	if character ~= nil then
+		local rootPart = character:FindFirstChild("HumanoidRootPart")
+		if rootPart ~= nil and rootPart:IsA("BasePart") then
+			return rootPart.Position + Vector3.new(0, 2, -5)
+		end
+	end
+	return Vector3.new(0, 14, 78)
+end
+
+local function createBurstPart(name: string, position: Vector3, color: Color3, size: number, lifetime: number): ()
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Anchored = true
+	part.CanCollide = false
+	part.CanTouch = false
+	part.Shape = Enum.PartType.Ball
+	part.Material = Enum.Material.Neon
+	part.Color = color
+	part.Transparency = 0.15
+	part.Size = Vector3.new(size, size, size)
+	part.Position = position
+	part.Parent = workspace
+	task.delay(lifetime, function()
+		if part.Parent ~= nil then
+			part:Destroy()
+		end
+	end)
+end
+
+local function playHatchReveal(effect: any): ()
+	local rarity = if typeof(effect.rarity) == "string" then effect.rarity else "Common"
+	local color = RARITY_COLORS[rarity] or RARITY_COLORS.Common
+	local position = getCharacterEffectPosition()
+	for index = 1, 8 do
+		local angle = math.rad(index * 45)
+		createBurstPart("HatchRevealSpark", position + Vector3.new(math.cos(angle) * 5, 1 + (index % 3), math.sin(angle) * 5), color, 1.2 + index * 0.08, 1.4)
+	end
+	createBurstPart("HatchRevealCore", position + Vector3.new(0, 2, 0), color, if rarity == "Legendary" then 8 else 5, 1.8)
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = `{rarity} Hatch!`,
+			Text = tostring(effect.displayName or "New dinosaur"),
+			Duration = 4,
+		})
+	end)
+end
+
+local function playFeedPulse(): ()
+	local position = getCharacterEffectPosition()
+	for index = 1, 5 do
+		createBurstPart("FeedHeartPulse", position + Vector3.new((index - 3) * 1.4, 3 + (index % 2), -1), Color3.fromRGB(244, 63, 94), 1.1, 1.2)
+	end
+end
+
+local function playEffect(effect: any): ()
+	if typeof(effect) ~= "table" or typeof(effect.kind) ~= "string" then
+		return
+	end
+	if effect.kind == "hatchReveal" then
+		playHatchReveal(effect)
+	elseif effect.kind == "feedPulse" then
+		playFeedPulse()
+	end
+end
+
+RunService.RenderStepped:Connect(function()
+	if currentPet == nil then
+		return
+	end
+	local character = player.Character
+	if character == nil then
+		return
+	end
+	local rootPart = character:FindFirstChild("HumanoidRootPart")
+	if rootPart == nil or not rootPart:IsA("BasePart") then
+		return
+	end
+	local target = if latestState ~= nil and latestState.isMounted == true then rootPart.CFrame * CFrame.new(0, -3.1, -1.2) else rootPart.CFrame * CFrame.new(-4, -1.5, 5)
+	currentPet:PivotTo(currentPet:GetPivot():Lerp(target, if latestState ~= nil and latestState.isMounted == true then 0.35 else 0.12))
+end)
+
+local function update(payload: any): ()
+	local state = if typeof(payload) == "table" and payload.state ~= nil then payload.state else payload
+	if typeof(state) ~= "table" then
+		return
+	end
+	hasLoadedState = true
+	latestState = state
+
+	stats.Text = `🥚 {formatNumber(state.eggs or 0)} eggs  •  +{formatNumber(state.incomePerSecond or 0)}/sec  •  Nest Lv.{state.nestLevel or 1}  •  Follow slots {state.followSlots or 1}`
+	objective.Text = `Objective: {state.objective or "Explore egg nests and grow your cave."}`
+
+	local activeDino: any = nil
+	if typeof(state.ownedDinos) == "table" then
+		for _, owned in state.ownedDinos do
+			if typeof(owned) == "table" and owned.uid == state.activeDinoUid then
+				activeDino = owned
+				break
+			end
+		end
+	end
+	local followingDinoId = if activeDino ~= nil and typeof(activeDino.id) == "string" then activeDino.id else if typeof(state.followingDinoId) == "string" then state.followingDinoId else nil
+	local activeStage = if activeDino ~= nil and typeof(activeDino.stage) == "string" then activeDino.stage else nil
+	ensurePet(followingDinoId, activeStage)
+	if activeDino ~= nil then
+		local age = if typeof(activeDino.ageSeconds) == "number" then activeDino.ageSeconds else 0
+		local growth = if typeof(activeDino.growthSeconds) == "number" and activeDino.growthSeconds > 0 then activeDino.growthSeconds else 1
+		local progress = math.clamp(age / growth, 0, 1) * 100
+		dinoInfo.Text = `DinoDex: {activeDino.displayName or "Dino"} • {activeStage or "Baby"} • {math.floor(progress)}% grown • Snacks {state.berryFood or 0}`
+	else
+		dinoInfo.Text = `DinoDex: {#(state.ownedDinos or {})} dinos discovered • Snacks {state.berryFood or 0}`
+	end
+	dexList.Text = buildDexText(state)
+
+	if state.starterEggClaimed == true then
+		valleyNestButton.Text = "Valley Nest"
+	else
+		valleyNestButton.Text = "Starter Egg"
+	end
+
+	if followingDinoId == nil then
+		dinoModeButton.Text = "Follow Dino"
+	else
+		dinoModeButton.Text = "Store Dino"
+	end
+	mountButton.Text = if state.isMounted == true then "Dismount" else "Mount"
+
+	if typeof(payload) == "table" and typeof(payload.message) == "string" and payload.message ~= "" then
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = "Dino Dash",
+				Text = payload.message,
+				Duration = 3,
+			})
+		end)
+	end
+	if typeof(payload) == "table" then
+		playEffect(payload.effect)
+	end
+end
+
+hatchButton.Activated:Connect(function()
+	send({ action = "hatch" })
+end)
+
+upgradeButton.Activated:Connect(function()
+	send({ action = "upgradeNest" })
+end)
+
+valleyNestButton.Activated:Connect(function()
+	local targetNest = "valley-nest"
+	if latestState ~= nil and latestState.starterEggClaimed ~= true then
+		targetNest = "starter-egg"
+	end
+	send({ action = "collectEggNest", nestId = targetNest })
+end)
+
+dinoModeButton.Activated:Connect(function()
+	if latestState == nil then
+		return
+	end
+	local followingDinoId = if typeof(latestState.followingDinoId) == "string" then latestState.followingDinoId else nil
+	if followingDinoId ~= nil then
+		send({ action = "setDinoMode", dinoId = followingDinoId, mode = "StoredInNest" })
+		return
+	end
+	local firstOwned = getFirstOwnedDino(latestState)
+	if firstOwned ~= nil then
+		send({ action = "setDinoMode", dinoId = firstOwned, mode = "Following" })
+	end
+end)
+
+feedButton.Activated:Connect(function()
+	send({ action = "feedActiveDino" })
+end)
+
+berryButton.Activated:Connect(function()
+	local nearestNode = findNearestBerryNode()
+	if nearestNode == nil then
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = "Dino Dash",
+				Text = "Stand near a glowing berry bush to gather snacks.",
+				Duration = 2,
+			})
+		end)
+		return
+	end
+	send({ action = "collectBerryNode", berryNodeId = nearestNode })
+end)
+
+mountButton.Activated:Connect(function()
+	send({ action = "toggleMount" })
+end)
+
+dexButton.Activated:Connect(function()
+	dexOpen = not dexOpen
+	dexPanel.Visible = dexOpen
+end)
+
+stateEvent.OnClientEvent:Connect(update)
+
+task.spawn(function()
+	for attempt = 1, 10 do
+		local ok, state = pcall(function()
+			return requestState:InvokeServer()
+		end)
+		if ok then
+			update(state)
+		end
+		if hasLoadedState then
+			break
+		end
+		objective.Text = `Objective: loading your nest cave... retry {attempt}/10`
+		task.wait(2)
+	end
+	if not hasLoadedState then
+		objective.Text = "Objective: still connecting. Rejoin if this does not clear soon."
+	end
+end)
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="Workspace" referent="25">
+    <Properties>
+      <string name="Name">Workspace</string>
+      <bool name="NeedsPivotMigration">false</bool>
+    </Properties>
+    <Item class="SpawnLocation" referent="26">
+      <Properties>
+        <string name="Name">DinoDashSpawn</string>
+        <bool name="AllowTeamChangeOnTouch">false</bool>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">16436245</Color3uint8>
+        <int name="Duration">0</int>
+        <bool name="Neutral">true</bool>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>9</Y>
+          <Z>34</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>16</X>
+          <Y>1</Y>
+          <Z>16</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="27">
+      <Properties>
+        <string name="Name">DinoDashStaticNestCaveBackWall</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">5722958</Color3uint8>
+        <token name="Material">896</token>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>24</Y>
+          <Z>-34</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>132</X>
+          <Y>46</Y>
+          <Z>16</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="28">
+      <Properties>
+        <string name="Name">DinoDashStaticNestCaveLeftWall</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">5722958</Color3uint8>
+        <token name="Material">896</token>
+        <Vector3 name="Position">
+          <X>-58</X>
+          <Y>21</Y>
+          <Z>4</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>16</X>
+          <Y>38</Y>
+          <Z>88</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="29">
+      <Properties>
+        <string name="Name">DinoDashStaticNestCaveRightWall</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">5722958</Color3uint8>
+        <token name="Material">896</token>
+        <Vector3 name="Position">
+          <X>58</X>
+          <Y>21</Y>
+          <Z>4</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>16</X>
+          <Y>38</Y>
+          <Z>88</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="30">
+      <Properties>
+        <string name="Name">DinoDashStaticStarterEggArrow</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <bool name="CanCollide">false</bool>
+        <Color3uint8 name="Color3uint8">16436245</Color3uint8>
+        <token name="Material">288</token>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>21</Y>
+          <Z>50</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>44</X>
+          <Y>4</Y>
+          <Z>12</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="31">
+      <Properties>
+        <string name="Name">DinoDashStaticStarterEggPedestal</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">7877903</Color3uint8>
+        <token name="Material">512</token>
+        <Vector3 name="Orientation">
+          <X>0</X>
+          <Y>0</Y>
+          <Z>90</Z>
+        </Vector3>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>9</Y>
+          <Z>78</Z>
+        </Vector3>
+        <token name="shape">2</token>
+        <Vector3 name="size">
+          <X>34</X>
+          <Y>5</Y>
+          <Z>34</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="32">
+      <Properties>
+        <string name="Name">DinoDashStaticStarterEggVisible</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <bool name="CanCollide">false</bool>
+        <Color3uint8 name="Color3uint8">16448210</Color3uint8>
+        <token name="Material">288</token>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>23</Y>
+          <Z>78</Z>
+        </Vector3>
+        <token name="shape">0</token>
+        <Vector3 name="size">
+          <X>16</X>
+          <Y>22</Y>
+          <Z>16</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="33">
+      <Properties>
+        <string name="Name">DinoDashStaticStarterPathFallback</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">14264411</Color3uint8>
+        <token name="Material">1360</token>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>6</Y>
+          <Z>138</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>38</X>
+          <Y>1</Y>
+          <Z>260</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+    <Item class="Part" referent="34">
+      <Properties>
+        <string name="Name">DinoDashStaticStarterValleyFallback</string>
+        <bool name="Anchored">true</bool>
+        <token name="BottomSurface">0</token>
+        <Color3uint8 name="Color3uint8">3512906</Color3uint8>
+        <Vector3 name="Position">
+          <X>0</X>
+          <Y>-5</Y>
+          <Z>0</Z>
+        </Vector3>
+        <Vector3 name="size">
+          <X>780</X>
+          <Y>16</Y>
+          <Z>780</Z>
+        </Vector3>
+        <token name="TopSurface">0</token>
+      </Properties>
+    </Item>
+  </Item>
+</roblox>

@@ -1,0 +1,1400 @@
+<roblox version="4">
+  <Item class="ReplicatedStorage" referent="0">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="1">
+      <Properties>
+        <string name="Name">Shared</string>
+      </Properties>
+      <Item class="ModuleScript" referent="2">
+        <Properties>
+          <string name="Name">GameConfig</string>
+          <string name="Source"><![CDATA[--!strict
+
+local Types = require(script.Parent.Types)
+
+type DinosaurDefinition = Types.DinosaurDefinition
+type NestDefinition = Types.NestDefinition
+type TrailDefinition = Types.TrailDefinition
+type DinosaurId = Types.DinosaurId
+type TrailId = Types.TrailId
+
+local GameConfig = {}
+
+GameConfig.SCHEMA_VERSION = 1
+GameConfig.STARTING_EGGS = 25
+GameConfig.BASE_HATCH_COST = 25
+GameConfig.HATCH_COST_GROWTH = 1.08
+GameConfig.MAX_OFFLINE_SECONDS = 60 * 60 * 4
+GameConfig.AUTOSAVE_SECONDS = 60
+GameConfig.INCOME_TICK_SECONDS = 1
+
+GameConfig.DINOSAURS = {
+	{
+		id = "starter-raptor" :: DinosaurId,
+		displayName = "Starter Raptor",
+		rarity = "Common",
+		weight = 620,
+		eggsPerSecond = 1,
+		color = Color3.fromRGB(74, 222, 128),
+	},
+	{
+		id = "tri-horn" :: DinosaurId,
+		displayName = "Tri-Horn",
+		rarity = "Rare",
+		weight = 250,
+		eggsPerSecond = 4,
+		color = Color3.fromRGB(96, 165, 250),
+	},
+	{
+		id = "bronto-buddy" :: DinosaurId,
+		displayName = "Bronto Buddy",
+		rarity = "Epic",
+		weight = 95,
+		eggsPerSecond = 12,
+		color = Color3.fromRGB(168, 85, 247),
+	},
+	{
+		id = "shadow-rex" :: DinosaurId,
+		displayName = "Shadow Rex",
+		rarity = "Legendary",
+		weight = 30,
+		eggsPerSecond = 42,
+		color = Color3.fromRGB(30, 41, 59),
+	},
+	{
+		id = "golden-ptero" :: DinosaurId,
+		displayName = "Golden Ptero",
+		rarity = "Legendary",
+		weight = 5,
+		eggsPerSecond = 125,
+		color = Color3.fromRGB(250, 204, 21),
+	},
+} :: { DinosaurDefinition }
+
+GameConfig.NESTS = {
+	{ level = 1, upgradeCost = 100, capacity = 8, incomeMultiplier = 1 },
+	{ level = 2, upgradeCost = 500, capacity = 16, incomeMultiplier = 1.25 },
+	{ level = 3, upgradeCost = 2_500, capacity = 30, incomeMultiplier = 1.6 },
+	{ level = 4, upgradeCost = 12_000, capacity = 50, incomeMultiplier = 2.1 },
+	{ level = 5, upgradeCost = 60_000, capacity = 85, incomeMultiplier = 3 },
+} :: { NestDefinition }
+
+GameConfig.TRAILS = {
+	{
+		id = "none" :: TrailId,
+		displayName = "No Trail",
+		cost = 0,
+		color = ColorSequence.new(Color3.new(1, 1, 1)),
+	},
+	{
+		id = "leaf-swirl" :: TrailId,
+		displayName = "Leaf Swirl",
+		cost = 750,
+		color = ColorSequence.new(Color3.fromRGB(34, 197, 94), Color3.fromRGB(190, 242, 100)),
+	},
+	{
+		id = "lava-spark" :: TrailId,
+		displayName = "Lava Spark",
+		cost = 3_500,
+		color = ColorSequence.new(Color3.fromRGB(239, 68, 68), Color3.fromRGB(251, 191, 36)),
+	},
+	{
+		id = "cosmic-comet" :: TrailId,
+		displayName = "Cosmic Comet",
+		cost = 15_000,
+		color = ColorSequence.new(Color3.fromRGB(99, 102, 241), Color3.fromRGB(236, 72, 153)),
+	},
+} :: { TrailDefinition }
+
+local totalWeight = 0
+for _, dino in GameConfig.DINOSAURS do
+	totalWeight += dino.weight
+end
+GameConfig.TOTAL_DINO_WEIGHT = totalWeight
+
+function GameConfig.getNest(level: number): NestDefinition
+	return GameConfig.NESTS[math.clamp(level, 1, #GameConfig.NESTS)]
+end
+
+function GameConfig.getNextNest(level: number): NestDefinition?
+	return GameConfig.NESTS[level + 1]
+end
+
+function GameConfig.getTrail(trailId: TrailId): TrailDefinition?
+	for _, trail in GameConfig.TRAILS do
+		if trail.id == trailId then
+			return trail
+		end
+	end
+	return nil
+end
+
+function GameConfig.getDinosaur(dinoId: DinosaurId): DinosaurDefinition?
+	for _, dino in GameConfig.DINOSAURS do
+		if dino.id == dinoId then
+			return dino
+		end
+	end
+	return nil
+end
+
+function GameConfig.getHatchCost(hatchCount: number): number
+	return math.floor(GameConfig.BASE_HATCH_COST * (GameConfig.HATCH_COST_GROWTH ^ hatchCount))
+end
+
+function GameConfig.rollDinosaur(rng: Random): DinosaurDefinition
+	local roll = rng:NextInteger(1, GameConfig.TOTAL_DINO_WEIGHT)
+	local running = 0
+	for _, dino in GameConfig.DINOSAURS do
+		running += dino.weight
+		if roll <= running then
+			return dino
+		end
+	end
+	return GameConfig.DINOSAURS[1]
+end
+
+return GameConfig
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="3">
+        <Properties>
+          <string name="Name">Monetization</string>
+        </Properties>
+        <Item class="ModuleScript" referent="4">
+          <Properties>
+            <string name="Name">ProductConfig</string>
+            <string name="Source"><![CDATA[--!strict
+
+-- Fill these IDs only after creating the real Roblox products/passes.
+-- Keep authoritative grants on the server in ReceiptProcessor; never grant from the client.
+local ProductConfig = {}
+
+ProductConfig.DEVELOPER_PRODUCTS = {
+	SmallEggPack = {
+		productId = 0,
+		displayName = "Small Egg Pack",
+		eggs = 1_000,
+	},
+	MegaEggPack = {
+		productId = 0,
+		displayName = "Mega Egg Pack",
+		eggs = 12_000,
+	},
+} :: { [string]: { productId: number, displayName: string, eggs: number } }
+
+ProductConfig.GAME_PASSES = {
+	VipNest = {
+		passId = 0,
+		displayName = "VIP Nest Cosmetics",
+	},
+} :: { [string]: { passId: number, displayName: string } }
+
+return ProductConfig
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="Folder" referent="5">
+        <Properties>
+          <string name="Name">Network</string>
+        </Properties>
+        <Item class="ModuleScript" referent="6">
+          <Properties>
+            <string name="Name">RemoteRegistry</string>
+            <string name="Source"><![CDATA[--!strict
+
+export type RemoteDefinition = {
+	name: string,
+	kind: "RemoteEvent" | "RemoteFunction",
+	maxCalls: number,
+	windowSeconds: number,
+}
+
+local RemoteRegistry = {}
+
+RemoteRegistry.FOLDER_NAME = "DinoDashRemotes"
+
+RemoteRegistry.REMOTES = {
+	Action = {
+		name = "Action",
+		kind = "RemoteEvent",
+		maxCalls = 10,
+		windowSeconds = 3,
+	},
+	State = {
+		name = "State",
+		kind = "RemoteEvent",
+		maxCalls = 120,
+		windowSeconds = 60,
+	},
+	RequestState = {
+		name = "RequestState",
+		kind = "RemoteFunction",
+		maxCalls = 5,
+		windowSeconds = 10,
+	},
+} :: { [string]: RemoteDefinition }
+
+return RemoteRegistry
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="Folder" referent="7">
+        <Properties>
+          <string name="Name">Security</string>
+        </Properties>
+        <Item class="ModuleScript" referent="8">
+          <Properties>
+            <string name="Name">RateLimiter</string>
+            <string name="Source"><![CDATA[--!strict
+
+local Players = game:GetService("Players")
+
+export type Result = {
+	allowed: boolean,
+	retryAfter: number,
+}
+
+type Bucket = {
+	windowStart: number,
+	count: number,
+}
+
+type PlayerBuckets = { [string]: Bucket }
+
+local RateLimiter = {}
+RateLimiter.__index = RateLimiter
+
+export type RateLimiter = typeof(setmetatable({} :: {
+	_buckets: { [number]: PlayerBuckets },
+}, RateLimiter))
+
+function RateLimiter.new(): RateLimiter
+	local self = setmetatable({
+		_buckets = {},
+	}, RateLimiter)
+
+	Players.PlayerRemoving:Connect(function(player: Player)
+		self._buckets[player.UserId] = nil
+	end)
+
+	return self
+end
+
+function RateLimiter.check(self: RateLimiter, player: Player, action: string, maxCalls: number, windowSeconds: number): Result
+	assert(maxCalls > 0, "maxCalls must be > 0")
+	assert(windowSeconds > 0, "windowSeconds must be > 0")
+
+	local now = os.clock()
+	local userBuckets = self._buckets[player.UserId]
+	if userBuckets == nil then
+		userBuckets = {}
+		self._buckets[player.UserId] = userBuckets
+	end
+
+	local bucket = userBuckets[action]
+	if bucket == nil or now - bucket.windowStart >= windowSeconds then
+		userBuckets[action] = {
+			windowStart = now,
+			count = 1,
+		}
+		return { allowed = true, retryAfter = 0 }
+	end
+
+	if bucket.count >= maxCalls then
+		return {
+			allowed = false,
+			retryAfter = math.max(0, windowSeconds - (now - bucket.windowStart)),
+		}
+	end
+
+	bucket.count += 1
+	return { allowed = true, retryAfter = 0 }
+end
+
+return RateLimiter
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="9">
+          <Properties>
+            <string name="Name">RemoteValidator</string>
+            <string name="Source"><![CDATA[--!strict
+
+local RemoteValidator = {}
+
+type PrimitiveType = "string" | "number" | "boolean" | "table" | "Instance" | "Vector3" | "CFrame"
+
+export type FieldRule = {
+	type: PrimitiveType,
+	required: boolean?,
+	min: number?,
+	max: number?,
+	maxLength: number?,
+}
+
+export type Schema = { [string]: FieldRule }
+
+local function typeOf(value: any): string
+	return typeof(value)
+end
+
+function RemoteValidator.validateTable(payload: any, schema: Schema): (boolean, string?)
+	if typeOf(payload) ~= "table" then
+		return false, "payload must be a table"
+	end
+
+	for fieldName, rule in pairs(schema) do
+		local value = payload[fieldName]
+		if value == nil then
+			if rule.required == true then
+				return false, `{fieldName} is required`
+			end
+			continue
+		end
+
+		if typeOf(value) ~= rule.type then
+			return false, `{fieldName} must be {rule.type}`
+		end
+
+		if rule.type == "number" then
+			local numberValue = value :: number
+			if rule.min ~= nil and numberValue < rule.min then
+				return false, `{fieldName} is below minimum`
+			end
+			if rule.max ~= nil and numberValue > rule.max then
+				return false, `{fieldName} is above maximum`
+			end
+		elseif rule.type == "string" then
+			local stringValue = value :: string
+			if rule.maxLength ~= nil and #stringValue > rule.maxLength then
+				return false, `{fieldName} is too long`
+			end
+		end
+	end
+
+	return true, nil
+end
+
+return RemoteValidator
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+      <Item class="ModuleScript" referent="10">
+        <Properties>
+          <string name="Name">Types</string>
+          <string name="Source"><![CDATA[--!strict
+
+export type DinosaurId = "starter-raptor" | "tri-horn" | "bronto-buddy" | "shadow-rex" | "golden-ptero"
+export type TrailId = "none" | "leaf-swirl" | "lava-spark" | "cosmic-comet"
+
+export type DinosaurDefinition = {
+	id: DinosaurId,
+	displayName: string,
+	rarity: "Common" | "Rare" | "Epic" | "Legendary",
+	weight: number,
+	eggsPerSecond: number,
+	color: Color3,
+}
+
+export type NestDefinition = {
+	level: number,
+	upgradeCost: number,
+	capacity: number,
+	incomeMultiplier: number,
+}
+
+export type TrailDefinition = {
+	id: TrailId,
+	displayName: string,
+	cost: number,
+	color: ColorSequence,
+}
+
+export type PlayerDino = {
+	id: DinosaurId,
+	count: number,
+}
+
+export type PlayerData = {
+	schemaVersion: number,
+	eggs: number,
+	nestLevel: number,
+	hatchCount: number,
+	dinos: { [DinosaurId]: number },
+	ownedTrails: { [TrailId]: boolean },
+	equippedTrail: TrailId,
+	lastSaveUnix: number,
+}
+
+export type PublicState = {
+	eggs: number,
+	nestLevel: number,
+	nestCapacity: number,
+	incomePerSecond: number,
+	hatchCost: number,
+	dinos: { [string]: number },
+	ownedTrails: { [string]: boolean },
+	equippedTrail: string,
+}
+
+return nil
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ServerScriptService" referent="11">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Folder" referent="12">
+      <Properties>
+        <string name="Name">Server</string>
+      </Properties>
+      <Item class="Script" referent="13">
+        <Properties>
+          <string name="Name">Main</string>
+          <token name="RunContext">0</token>
+          <string name="Source"><![CDATA[--!strict
+
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RemoteValidator = require(Shared.Security.RemoteValidator)
+local ProductConfig = require(Shared.Monetization.ProductConfig)
+local GameConfig = require(Shared.GameConfig)
+
+local NetworkService = require(script.Services.NetworkService)
+local PlayerDataService = require(script.Services.PlayerDataService)
+local ReceiptProcessor = require(script.Services.ReceiptProcessor)
+local WorldService = require(script.Services.WorldService)
+
+local networkService = NetworkService.new()
+local playerDataService = PlayerDataService.new()
+local receiptProcessor = ReceiptProcessor.new(playerDataService)
+
+local actionEvent = networkService:getEvent("Action")
+local stateEvent = networkService:getEvent("State")
+local requestStateFunction = networkService:getFunction("RequestState")
+
+local function pushState(player: Player, message: string?): ()
+	local state = playerDataService:toPublicState(player)
+	if state ~= nil then
+		stateEvent:FireClient(player, {
+			state = state,
+			message = message,
+		})
+	end
+end
+
+local function applyTrail(player: Player): ()
+	local data = playerDataService:get(player)
+	if data == nil then
+		return
+	end
+	local trailConfig = GameConfig.getTrail(data.equippedTrail)
+	if trailConfig == nil or trailConfig.id == "none" then
+		return
+	end
+	local character = player.Character
+	if character == nil then
+		return
+	end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if root == nil or not root:IsA("BasePart") then
+		return
+	end
+	local oldTrail = root:FindFirstChild("DinoDashTrail")
+	if oldTrail ~= nil then
+		oldTrail:Destroy()
+	end
+	local oldA0 = root:FindFirstChild("DinoDashTrailA0")
+	if oldA0 ~= nil then oldA0:Destroy() end
+	local oldA1 = root:FindFirstChild("DinoDashTrailA1")
+	if oldA1 ~= nil then oldA1:Destroy() end
+
+	local a0 = Instance.new("Attachment")
+	a0.Name = "DinoDashTrailA0"
+	a0.Position = Vector3.new(0, 1.5, 0.7)
+	a0.Parent = root
+	local a1 = Instance.new("Attachment")
+	a1.Name = "DinoDashTrailA1"
+	a1.Position = Vector3.new(0, -1.5, 0.7)
+	a1.Parent = root
+	local trail = Instance.new("Trail")
+	trail.Name = "DinoDashTrail"
+	trail.Attachment0 = a0
+	trail.Attachment1 = a1
+	trail.Color = trailConfig.color
+	trail.Lifetime = 0.7
+	trail.MinLength = 0.1
+	trail.Parent = root
+end
+
+local actionSchema = {
+	action = { type = "string", required = true, maxLength = 32 },
+	trailId = { type = "string", required = false, maxLength = 32 },
+}
+
+actionEvent.OnServerEvent:Connect(function(player: Player, payload: any)
+	if not networkService:checkLimit(player, "Action") then
+		pushState(player, "Slow down a little.")
+		return
+	end
+	local valid, reason = RemoteValidator.validateTable(payload, actionSchema)
+	if not valid then
+		warn(`Rejected malformed payload from {player.UserId}: {reason or "unknown"}`)
+		return
+	end
+
+	local action = payload.action :: string
+	if action == "hatch" then
+		local ok, message = playerDataService:hatch(player)
+		pushState(player, message)
+	elseif action == "upgradeNest" then
+		local ok, message = playerDataService:upgradeNest(player)
+		pushState(player, message)
+	elseif action == "buyTrail" then
+		local ok, message = playerDataService:buyTrail(player, payload.trailId :: any)
+		if ok then
+			applyTrail(player)
+		end
+		pushState(player, message)
+	elseif action == "buySmallEggPack" then
+		local productId = ProductConfig.DEVELOPER_PRODUCTS.SmallEggPack.productId
+		if productId > 0 then
+			MarketplaceService:PromptProductPurchase(player, productId)
+		else
+			pushState(player, "Egg pack product ID is not configured yet.")
+		end
+	elseif action == "buyMegaEggPack" then
+		local productId = ProductConfig.DEVELOPER_PRODUCTS.MegaEggPack.productId
+		if productId > 0 then
+			MarketplaceService:PromptProductPurchase(player, productId)
+		else
+			pushState(player, "Mega pack product ID is not configured yet.")
+		end
+	else
+		pushState(player, "Unknown action.")
+	end
+end)
+
+requestStateFunction.OnServerInvoke = function(player: Player): any
+	if not networkService:checkLimit(player, "RequestState") then
+		return nil
+	end
+	return playerDataService:toPublicState(player)
+end
+
+MarketplaceService.ProcessReceipt = function(receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
+	return receiptProcessor:processReceipt(receiptInfo)
+end
+
+WorldService.build()
+
+Players.PlayerAdded:Connect(function(player: Player)
+	playerDataService:load(player)
+	playerDataService:createLeaderstats(player)
+	player.CharacterAdded:Connect(function()
+		task.wait(1)
+		applyTrail(player)
+	end)
+	pushState(player, "Welcome to Dino Dash!")
+end)
+
+Players.PlayerRemoving:Connect(function(player: Player)
+	playerDataService:unload(player)
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(GameConfig.INCOME_TICK_SECONDS)
+		for _, player in Players:GetPlayers() do
+			local income = playerDataService:getIncomePerSecond(player)
+			if income > 0 then
+				playerDataService:addEggs(player, income * GameConfig.INCOME_TICK_SECONDS)
+				pushState(player, nil)
+			end
+		end
+	end
+end)
+
+task.spawn(function()
+	while true do
+		task.wait(GameConfig.AUTOSAVE_SECONDS)
+		for _, player in Players:GetPlayers() do
+			playerDataService:save(player)
+		end
+	end
+end)
+
+game:BindToClose(function()
+	for _, player in Players:GetPlayers() do
+		playerDataService:save(player)
+	end
+end)
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="Folder" referent="14">
+        <Properties>
+          <string name="Name">Services</string>
+        </Properties>
+        <Item class="ModuleScript" referent="15">
+          <Properties>
+            <string name="Name">EntitlementService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local EntitlementService = {}
+
+function EntitlementService.userOwnsPassAsync(player: Player, passId: number): boolean
+	if passId <= 0 then
+		return false
+	end
+
+	local ok, result = pcall(function()
+		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, passId)
+	end)
+
+	if not ok then
+		warn(`Game pass ownership check failed for {player.UserId}/{passId}: {result}`)
+		return false
+	end
+
+	return result == true
+end
+
+return EntitlementService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="16">
+          <Properties>
+            <string name="Name">NetworkService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RemoteRegistry = require(Shared.Network.RemoteRegistry)
+local RateLimiter = require(Shared.Security.RateLimiter)
+
+local NetworkService = {}
+NetworkService.__index = NetworkService
+
+export type NetworkService = typeof(setmetatable({} :: {
+	_folder: Folder,
+	_rateLimiter: any,
+}, NetworkService))
+
+local function ensureRemote(parent: Instance, definition: RemoteRegistry.RemoteDefinition): Instance
+	local existing = parent:FindFirstChild(definition.name)
+	if existing ~= nil then
+		return existing
+	end
+
+	local remote: Instance
+	if definition.kind == "RemoteFunction" then
+		remote = Instance.new("RemoteFunction")
+	else
+		remote = Instance.new("RemoteEvent")
+	end
+	remote.Name = definition.name
+	remote.Parent = parent
+	return remote
+end
+
+function NetworkService.new(): NetworkService
+	local folder = ReplicatedStorage:FindFirstChild(RemoteRegistry.FOLDER_NAME)
+	if folder == nil then
+		folder = Instance.new("Folder")
+		folder.Name = RemoteRegistry.FOLDER_NAME
+		folder.Parent = ReplicatedStorage
+	end
+
+	for _, definition in RemoteRegistry.REMOTES do
+		ensureRemote(folder, definition)
+	end
+
+	return setmetatable({
+		_folder = folder :: Folder,
+		_rateLimiter = RateLimiter.new(),
+	}, NetworkService)
+end
+
+function NetworkService.getEvent(self: NetworkService, remoteKey: string): RemoteEvent
+	local definition = RemoteRegistry.REMOTES[remoteKey]
+	assert(definition ~= nil and definition.kind == "RemoteEvent", `Unknown RemoteEvent {remoteKey}`)
+	return self._folder:WaitForChild(definition.name) :: RemoteEvent
+end
+
+function NetworkService.getFunction(self: NetworkService, remoteKey: string): RemoteFunction
+	local definition = RemoteRegistry.REMOTES[remoteKey]
+	assert(definition ~= nil and definition.kind == "RemoteFunction", `Unknown RemoteFunction {remoteKey}`)
+	return self._folder:WaitForChild(definition.name) :: RemoteFunction
+end
+
+function NetworkService.checkLimit(self: NetworkService, player: Player, remoteKey: string): boolean
+	local definition = RemoteRegistry.REMOTES[remoteKey]
+	if definition == nil then
+		return false
+	end
+	local result = self._rateLimiter:check(player, remoteKey, definition.maxCalls, definition.windowSeconds)
+	return result.allowed
+end
+
+return NetworkService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="17">
+          <Properties>
+            <string name="Name">PlayerDataService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local DataStoreService = game:GetService("DataStoreService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local GameConfig = require(Shared.GameConfig)
+local Types = require(Shared.Types)
+
+type PlayerData = Types.PlayerData
+type PublicState = Types.PublicState
+type DinosaurId = Types.DinosaurId
+type TrailId = Types.TrailId
+
+local STORE_NAME = "DinoDash_PlayerData_v1"
+
+local PlayerDataService = {}
+PlayerDataService.__index = PlayerDataService
+
+export type PlayerDataService = typeof(setmetatable({} :: {
+	_store: GlobalDataStore,
+	_profiles: { [number]: PlayerData },
+	_rng: Random,
+}, PlayerDataService))
+
+local function defaultData(): PlayerData
+	return {
+		schemaVersion = GameConfig.SCHEMA_VERSION,
+		eggs = GameConfig.STARTING_EGGS,
+		nestLevel = 1,
+		hatchCount = 0,
+		dinos = {},
+		ownedTrails = { none = true },
+		equippedTrail = "none",
+		lastSaveUnix = os.time(),
+	}
+end
+
+local function sanitize(raw: any): PlayerData
+	local data = defaultData()
+	if typeof(raw) ~= "table" then
+		return data
+	end
+
+	data.eggs = math.max(0, math.floor(if typeof(raw.eggs) == "number" then raw.eggs else data.eggs))
+	data.nestLevel = math.clamp(math.floor(if typeof(raw.nestLevel) == "number" then raw.nestLevel else 1), 1, #GameConfig.NESTS)
+	data.hatchCount = math.max(0, math.floor(if typeof(raw.hatchCount) == "number" then raw.hatchCount else 0))
+	data.lastSaveUnix = math.floor(if typeof(raw.lastSaveUnix) == "number" then raw.lastSaveUnix else os.time())
+
+	if typeof(raw.dinos) == "table" then
+		for _, dino in GameConfig.DINOSAURS do
+			local amount = raw.dinos[dino.id]
+			if typeof(amount) == "number" and amount > 0 then
+				data.dinos[dino.id] = math.floor(amount)
+			end
+		end
+	end
+
+	if typeof(raw.ownedTrails) == "table" then
+		for _, trail in GameConfig.TRAILS do
+			if raw.ownedTrails[trail.id] == true then
+				data.ownedTrails[trail.id] = true
+			end
+		end
+	end
+
+	if typeof(raw.equippedTrail) == "string" and data.ownedTrails[raw.equippedTrail :: TrailId] == true then
+		data.equippedTrail = raw.equippedTrail :: TrailId
+	end
+
+	return data
+end
+
+local function dataKey(player: Player): string
+	return `player_{player.UserId}`
+end
+
+local function retry<T>(callback: () -> T): (boolean, T?)
+	local lastResult: T? = nil
+	for attempt = 1, 4 do
+		local ok, result = pcall(callback)
+		if ok then
+			lastResult = result
+			return true, lastResult
+		end
+		task.wait(0.5 * attempt)
+	end
+	return false, lastResult
+end
+
+function PlayerDataService.new(): PlayerDataService
+	return setmetatable({
+		_store = DataStoreService:GetDataStore(STORE_NAME),
+		_profiles = {},
+		_rng = Random.new(),
+	}, PlayerDataService)
+end
+
+function PlayerDataService.load(self: PlayerDataService, player: Player): PlayerData
+	local ok, raw = retry(function()
+		return self._store:GetAsync(dataKey(player))
+	end)
+
+	local data = if ok then sanitize(raw) else defaultData()
+	local offlineSeconds = math.clamp(os.time() - data.lastSaveUnix, 0, GameConfig.MAX_OFFLINE_SECONDS)
+	if offlineSeconds > 0 then
+		data.eggs += math.floor(self:getIncomePerSecondFromData(data) * offlineSeconds * 0.25)
+	end
+
+	self._profiles[player.UserId] = data
+	return data
+end
+
+function PlayerDataService.save(self: PlayerDataService, player: Player): boolean
+	local data = self._profiles[player.UserId]
+	if data == nil then
+		return true
+	end
+	data.lastSaveUnix = os.time()
+
+	local ok = retry(function()
+		self._store:UpdateAsync(dataKey(player), function(_old: any)
+			return data
+		end)
+		return true
+	end)
+	return ok
+end
+
+function PlayerDataService.unload(self: PlayerDataService, player: Player): ()
+	self:save(player)
+	self._profiles[player.UserId] = nil
+end
+
+function PlayerDataService.get(self: PlayerDataService, player: Player): PlayerData?
+	return self._profiles[player.UserId]
+end
+
+function PlayerDataService.getIncomePerSecondFromData(_self: PlayerDataService, data: PlayerData): number
+	local income = 0
+	for _, dino in GameConfig.DINOSAURS do
+		income += (data.dinos[dino.id] or 0) * dino.eggsPerSecond
+	end
+	return income * GameConfig.getNest(data.nestLevel).incomeMultiplier
+end
+
+function PlayerDataService.getIncomePerSecond(self: PlayerDataService, player: Player): number
+	local data = self:get(player)
+	if data == nil then
+		return 0
+	end
+	return self:getIncomePerSecondFromData(data)
+end
+
+function PlayerDataService.addEggs(self: PlayerDataService, player: Player, amount: number): ()
+	local data = self:get(player)
+	if data == nil then
+		return
+	end
+	data.eggs = math.max(0, math.floor(data.eggs + amount))
+end
+
+function PlayerDataService.hatch(self: PlayerDataService, player: Player): (boolean, string, string?)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading.", nil
+	end
+
+	local nest = GameConfig.getNest(data.nestLevel)
+	local ownedCount = 0
+	for _, amount in data.dinos do
+		ownedCount += amount
+	end
+	if ownedCount >= nest.capacity then
+		return false, "Your nest is full. Upgrade it before hatching more dinos.", nil
+	end
+
+	local cost = GameConfig.getHatchCost(data.hatchCount)
+	if data.eggs < cost then
+		return false, "Not enough eggs to hatch.", nil
+	end
+
+	data.eggs -= cost
+	data.hatchCount += 1
+	local dino = GameConfig.rollDinosaur(self._rng)
+	data.dinos[dino.id] = (data.dinos[dino.id] or 0) + 1
+	return true, `Hatched {dino.displayName}!`, dino.id
+end
+
+function PlayerDataService.upgradeNest(self: PlayerDataService, player: Player): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local nextNest = GameConfig.getNextNest(data.nestLevel)
+	if nextNest == nil then
+		return false, "Your nest is already max level."
+	end
+	if data.eggs < nextNest.upgradeCost then
+		return false, "Not enough eggs to upgrade your nest."
+	end
+	data.eggs -= nextNest.upgradeCost
+	data.nestLevel = nextNest.level
+	return true, `Nest upgraded to level {nextNest.level}!`
+end
+
+function PlayerDataService.buyTrail(self: PlayerDataService, player: Player, trailId: TrailId): (boolean, string)
+	local data = self:get(player)
+	if data == nil then
+		return false, "Data is still loading."
+	end
+	local trail = GameConfig.getTrail(trailId)
+	if trail == nil then
+		return false, "Invalid trail."
+	end
+	if data.ownedTrails[trailId] == true then
+		data.equippedTrail = trailId
+		return true, `Equipped {trail.displayName}.`
+	end
+	if data.eggs < trail.cost then
+		return false, "Not enough eggs for that trail."
+	end
+	data.eggs -= trail.cost
+	data.ownedTrails[trailId] = true
+	data.equippedTrail = trailId
+	return true, `Unlocked {trail.displayName}!`
+end
+
+function PlayerDataService.toPublicState(self: PlayerDataService, player: Player): PublicState?
+	local data = self:get(player)
+	if data == nil then
+		return nil
+	end
+	local publicDinos: { [string]: number } = {}
+	for _, dino in GameConfig.DINOSAURS do
+		publicDinos[dino.id] = data.dinos[dino.id] or 0
+	end
+	local ownedTrails: { [string]: boolean } = {}
+	for _, trail in GameConfig.TRAILS do
+		ownedTrails[trail.id] = data.ownedTrails[trail.id] == true
+	end
+	local nest = GameConfig.getNest(data.nestLevel)
+	return {
+		eggs = data.eggs,
+		nestLevel = data.nestLevel,
+		nestCapacity = nest.capacity,
+		incomePerSecond = self:getIncomePerSecond(player),
+		hatchCost = GameConfig.getHatchCost(data.hatchCount),
+		dinos = publicDinos,
+		ownedTrails = ownedTrails,
+		equippedTrail = data.equippedTrail,
+	}
+end
+
+function PlayerDataService.createLeaderstats(self: PlayerDataService, player: Player): ()
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+
+	local eggs = Instance.new("IntValue")
+	eggs.Name = "Eggs"
+	eggs.Parent = leaderstats
+
+	local nest = Instance.new("IntValue")
+	nest.Name = "Nest"
+	nest.Parent = leaderstats
+
+	task.spawn(function()
+		while player.Parent == Players do
+			local data = self:get(player)
+			if data ~= nil then
+				eggs.Value = math.floor(data.eggs)
+				nest.Value = data.nestLevel
+			end
+			task.wait(2)
+		end
+	end)
+end
+
+return PlayerDataService
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="18">
+          <Properties>
+            <string name="Name">ReceiptProcessor</string>
+            <string name="Source"><![CDATA[--!strict
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local ProductConfig = require(Shared.Monetization.ProductConfig)
+
+local ReceiptProcessor = {}
+ReceiptProcessor.__index = ReceiptProcessor
+
+export type ReceiptInfo = {
+	PlayerId: number,
+	ProductId: number,
+	PurchaseId: string,
+}
+
+export type ReceiptProcessor = typeof(setmetatable({} :: {
+	_playerDataService: any,
+	_processed: { [string]: boolean },
+}, ReceiptProcessor))
+
+function ReceiptProcessor.new(playerDataService: any): ReceiptProcessor
+	return setmetatable({
+		_playerDataService = playerDataService,
+		_processed = {},
+	}, ReceiptProcessor)
+end
+
+function ReceiptProcessor.processReceipt(self: ReceiptProcessor, receiptInfo: { [string]: any }): Enum.ProductPurchaseDecision
+	local purchaseId = tostring(receiptInfo.PurchaseId)
+	if self._processed[purchaseId] == true then
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+
+	local playerId = receiptInfo.PlayerId
+	local productId = receiptInfo.ProductId
+	if typeof(playerId) ~= "number" or typeof(productId) ~= "number" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
+	local player = game:GetService("Players"):GetPlayerByUserId(playerId)
+	if player == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+
+	for _, product in ProductConfig.DEVELOPER_PRODUCTS do
+		if product.productId == productId and product.productId > 0 then
+			self._playerDataService:addEggs(player, product.eggs)
+			self._processed[purchaseId] = true
+			return Enum.ProductPurchaseDecision.PurchaseGranted
+		end
+	end
+
+	warn(`Unknown developer product receipt: {productId}`)
+	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
+return ReceiptProcessor
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="19">
+          <Properties>
+            <string name="Name">WorldService</string>
+            <string name="Source"><![CDATA[--!strict
+
+local Lighting = game:GetService("Lighting")
+local Workspace = game:GetService("Workspace")
+
+local WorldService = {}
+
+local function createPart(name: string, size: Vector3, position: Vector3, color: Color3, material: Enum.Material): Part
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Anchored = true
+	part.Size = size
+	part.Position = position
+	part.Color = color
+	part.Material = material
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Parent = Workspace
+	return part
+end
+
+local function createSpawn(): ()
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "DinoDashSpawn"
+	spawn.Anchored = true
+	spawn.Size = Vector3.new(12, 1, 12)
+	spawn.Position = Vector3.new(0, 2, 0)
+	spawn.Color = Color3.fromRGB(250, 204, 21)
+	spawn.Material = Enum.Material.Grass
+	spawn.Neutral = true
+	spawn.Parent = Workspace
+end
+
+local function createLabel(parent: BasePart, text: string): ()
+	local billboard = Instance.new("BillboardGui")
+	billboard.Name = "Label"
+	billboard.Size = UDim2.fromOffset(260, 80)
+	billboard.StudsOffset = Vector3.new(0, 5, 0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = parent
+
+	local label = Instance.new("TextLabel")
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = Enum.Font.GothamBold
+	label.TextScaled = true
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextStrokeTransparency = 0.35
+	label.Text = text
+	label.Parent = billboard
+end
+
+function WorldService.build(): ()
+	Workspace.FallenPartsDestroyHeight = -100
+	Lighting.ClockTime = 14
+	Lighting.Brightness = 2
+	Lighting.EnvironmentDiffuseScale = 0.8
+	Lighting.EnvironmentSpecularScale = 0.4
+
+	createPart("DinoDashIsland", Vector3.new(170, 2, 170), Vector3.new(0, 0, 0), Color3.fromRGB(74, 222, 128), Enum.Material.Grass)
+	createPart("NestPlatform", Vector3.new(34, 2, 34), Vector3.new(0, 2, -34), Color3.fromRGB(180, 83, 9), Enum.Material.WoodPlanks)
+	createPart("HatchPlatform", Vector3.new(28, 2, 28), Vector3.new(-42, 2, 18), Color3.fromRGB(251, 191, 36), Enum.Material.Sand)
+	createPart("TrailShop", Vector3.new(28, 2, 28), Vector3.new(42, 2, 18), Color3.fromRGB(129, 140, 248), Enum.Material.Neon)
+
+	local egg = createPart("GiantEgg", Vector3.new(10, 14, 10), Vector3.new(-42, 10, 18), Color3.fromRGB(254, 249, 195), Enum.Material.SmoothPlastic)
+	egg.Shape = Enum.PartType.Ball
+	createLabel(egg, "HATCH DINOS\nUse the button")
+
+	local nest = createPart("BigNest", Vector3.new(18, 5, 18), Vector3.new(0, 6, -34), Color3.fromRGB(120, 53, 15), Enum.Material.Wood)
+	createLabel(nest, "UPGRADE NEST\nMore capacity + income")
+
+	local shop = createPart("TrailShopSign", Vector3.new(14, 12, 2), Vector3.new(42, 10, 5), Color3.fromRGB(79, 70, 229), Enum.Material.Neon)
+	createLabel(shop, "COSMETIC TRAILS\nNo pay-to-win")
+
+	createSpawn()
+end
+
+return WorldService
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="20">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="21">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="Folder" referent="22">
+        <Properties>
+          <string name="Name">Client</string>
+        </Properties>
+        <Item class="LocalScript" referent="23">
+          <Properties>
+            <string name="Name">Main</string>
+            <string name="Source"><![CDATA[--!strict
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+
+local player = Players.LocalPlayer
+local remotes = ReplicatedStorage:WaitForChild("DinoDashRemotes")
+local actionEvent = remotes:WaitForChild("Action") :: RemoteEvent
+local stateEvent = remotes:WaitForChild("State") :: RemoteEvent
+local requestState = remotes:WaitForChild("RequestState") :: RemoteFunction
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "DinoDashHud"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local root = Instance.new("Frame")
+root.Name = "Root"
+root.AnchorPoint = Vector2.new(0.5, 1)
+root.Position = UDim2.fromScale(0.5, 0.98)
+root.Size = UDim2.fromScale(0.92, 0.34)
+root.BackgroundColor3 = Color3.fromRGB(15, 23, 42)
+root.BackgroundTransparency = 0.08
+root.Parent = gui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 18)
+corner.Parent = root
+
+local padding = Instance.new("UIPadding")
+padding.PaddingTop = UDim.new(0, 12)
+padding.PaddingBottom = UDim.new(0, 12)
+padding.PaddingLeft = UDim.new(0, 12)
+padding.PaddingRight = UDim.new(0, 12)
+padding.Parent = root
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.BackgroundTransparency = 1
+title.Size = UDim2.new(1, 0, 0, 34)
+title.Font = Enum.Font.GothamBlack
+title.Text = "Dino Dash"
+title.TextColor3 = Color3.fromRGB(250, 204, 21)
+title.TextScaled = true
+title.Parent = root
+
+local stats = Instance.new("TextLabel")
+stats.Name = "Stats"
+stats.BackgroundTransparency = 1
+stats.Position = UDim2.fromOffset(0, 40)
+stats.Size = UDim2.new(1, 0, 0, 54)
+stats.Font = Enum.Font.GothamSemibold
+stats.TextColor3 = Color3.fromRGB(241, 245, 249)
+stats.TextScaled = true
+stats.Text = "Loading..."
+stats.Parent = root
+
+local message = Instance.new("TextLabel")
+message.Name = "Message"
+message.BackgroundTransparency = 1
+message.Position = UDim2.fromOffset(0, 92)
+message.Size = UDim2.new(1, 0, 0, 34)
+message.Font = Enum.Font.GothamBold
+message.TextColor3 = Color3.fromRGB(134, 239, 172)
+message.TextScaled = true
+message.Text = "Hatch dinos, upgrade nests, and unlock cosmetic trails."
+message.Parent = root
+
+local buttonRow = Instance.new("Frame")
+buttonRow.Name = "Buttons"
+buttonRow.BackgroundTransparency = 1
+buttonRow.Position = UDim2.fromOffset(0, 132)
+buttonRow.Size = UDim2.new(1, 0, 0, 58)
+buttonRow.Parent = root
+
+local list = Instance.new("UIListLayout")
+list.FillDirection = Enum.FillDirection.Horizontal
+list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+list.VerticalAlignment = Enum.VerticalAlignment.Center
+list.Padding = UDim.new(0, 8)
+list.Parent = buttonRow
+
+local function makeButton(label: string, color: Color3): TextButton
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.new(0.19, 0, 1, 0)
+	button.BackgroundColor3 = color
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Font = Enum.Font.GothamBold
+	button.TextScaled = true
+	button.Text = label
+	button.AutoButtonColor = true
+	button.Parent = buttonRow
+	local c = Instance.new("UICorner")
+	c.CornerRadius = UDim.new(0, 12)
+	c.Parent = button
+	return button
+end
+
+local hatchButton = makeButton("Hatch", Color3.fromRGB(34, 197, 94))
+local upgradeButton = makeButton("Upgrade", Color3.fromRGB(245, 158, 11))
+local leafButton = makeButton("Leaf Trail", Color3.fromRGB(22, 163, 74))
+local lavaButton = makeButton("Lava Trail", Color3.fromRGB(220, 38, 38))
+local cosmicButton = makeButton("Cosmic", Color3.fromRGB(124, 58, 237))
+
+local dinoList = Instance.new("TextLabel")
+dinoList.Name = "Dinos"
+dinoList.BackgroundTransparency = 1
+dinoList.Position = UDim2.fromOffset(0, 196)
+dinoList.Size = UDim2.new(1, 0, 0, 52)
+dinoList.Font = Enum.Font.Gotham
+dinoList.TextColor3 = Color3.fromRGB(226, 232, 240)
+dinoList.TextScaled = true
+dinoList.TextWrapped = true
+dinoList.Text = ""
+dinoList.Parent = root
+
+local function send(action: string, trailId: string?): ()
+	actionEvent:FireServer({
+		action = action,
+		trailId = trailId,
+	})
+end
+
+hatchButton.Activated:Connect(function()
+	send("hatch", nil)
+end)
+upgradeButton.Activated:Connect(function()
+	send("upgradeNest", nil)
+end)
+leafButton.Activated:Connect(function()
+	send("buyTrail", "leaf-swirl")
+end)
+lavaButton.Activated:Connect(function()
+	send("buyTrail", "lava-spark")
+end)
+cosmicButton.Activated:Connect(function()
+	send("buyTrail", "cosmic-comet")
+end)
+
+local function formatNumber(value: number): string
+	if value >= 1_000_000 then
+		return string.format("%.1fM", value / 1_000_000)
+	elseif value >= 1_000 then
+		return string.format("%.1fK", value / 1_000)
+	end
+	return tostring(math.floor(value))
+end
+
+local function update(payload: any): ()
+	local state = if typeof(payload) == "table" and payload.state ~= nil then payload.state else payload
+	if typeof(state) ~= "table" then
+		return
+	end
+	stats.Text = `Eggs: {formatNumber(state.eggs or 0)}  |  +{formatNumber(state.incomePerSecond or 0)}/sec  |  Nest Lv.{state.nestLevel or 1} ({state.nestCapacity or 0} cap)  | Hatch: {formatNumber(state.hatchCost or 0)}`
+	local dinos = state.dinos or {}
+	dinoList.Text = `Raptor {dinos["starter-raptor"] or 0} • Tri-Horn {dinos["tri-horn"] or 0} • Bronto {dinos["bronto-buddy"] or 0} • Shadow Rex {dinos["shadow-rex"] or 0} • Golden Ptero {dinos["golden-ptero"] or 0}`
+	if typeof(payload) == "table" and typeof(payload.message) == "string" and payload.message ~= "" then
+		message.Text = payload.message
+		pcall(function()
+			StarterGui:SetCore("SendNotification", {
+				Title = "Dino Dash",
+				Text = payload.message,
+				Duration = 2,
+			})
+		end)
+	end
+end
+
+stateEvent.OnClientEvent:Connect(update)
+
+task.spawn(function()
+	local ok, state = pcall(function()
+		return requestState:InvokeServer()
+	end)
+	if ok then
+		update(state)
+	end
+end)
+]]></string>
+          </Properties>
+        </Item>
+      </Item>
+    </Item>
+  </Item>
+</roblox>

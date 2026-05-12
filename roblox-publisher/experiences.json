@@ -1,0 +1,23 @@
+﻿{
+    "grass-gobbler":  {
+                          "groupId":  "828600704",
+                          "needsDashboardCreate":  true,
+                          "universeId":  "10141023215",
+                          "project":  "D:\\Openclaw\\GRASS_GOBBLER_COW_CONTEST",
+                          "latestBuildPattern":  "*.rbxl*",
+                          "apiKeyPath":  "D:\\Openclaw\\roblox credentials\\roblox api.txt",
+                          "name":  "Grass Gobbler Cow Contest",
+                          "buildDir":  "D:\\Openclaw\\GRASS_GOBBLER_COW_CONTEST\\build",
+                          "placeId":  "109224690522442"
+                      },
+    "claw-machine":  {
+                         "groupId":  "828600704",
+                         "universeId":  "10135510431",
+                         "project":  "D:\\Openclaw\\CLAWDIAS-CLAWMACHINE",
+                         "latestBuildPattern":  "*.rbxl*",
+                         "apiKeyPath":  "D:\\Openclaw\\roblox credentials\\roblox api.txt",
+                         "name":  "Clawdia\u0027s Claw Machine",
+                         "buildDir":  "D:\\Openclaw\\CLAWDIAS-CLAWMACHINE\\build",
+                         "placeId":  "103982561389598"
+                     }
+}

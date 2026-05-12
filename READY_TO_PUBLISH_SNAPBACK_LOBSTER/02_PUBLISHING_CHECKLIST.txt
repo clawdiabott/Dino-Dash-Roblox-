@@ -1,0 +1,64 @@
+THE SNAP BACK — FINAL PUBLISHING CHECKLIST
+
+Folder:
+D:\Openclaw\READY_TO_PUBLISH_SNAPBACK_LOBSTER\
+
+FILES:
+1) THE_SNAP_BACK_FINAL_IMPORT.fbx
+   - Final locked-size mesh with realistic front claws.
+
+2) THE_SNAP_BACK_FINAL_TEXTURE.png
+   - Final lobster color texture.
+
+3) 01_WRAP_AS_ACCESSORY_AND_APPLY_TEXTURE.lua
+   - Command Bar helper to wrap mesh as Accessory and apply texture.
+
+STUDIO SETUP:
+1) Open Roblox Studio.
+2) Import THE_SNAP_BACK_FINAL_IMPORT.fbx.
+3) Upload THE_SNAP_BACK_FINAL_TEXTURE.png in Asset Manager > Images.
+4) Copy the uploaded texture/image asset ID.
+5) Open 01_WRAP_AS_ACCESSORY_AND_APPLY_TEXTURE.lua.
+6) Replace PASTE_TEXTURE_ASSET_ID_HERE with the numeric asset ID.
+7) Select the imported MeshPart in Explorer.
+8) Paste/run the script in View > Command Bar.
+9) You should now have:
+
+   Accessory: The Snap Back
+   └── Handle
+       ├── HatAttachment
+       └── SurfaceAppearance
+
+FIT VALIDATION:
+- Test on R15 blocky and R15 normal avatar.
+- It should sit like a hat/snapback, not float above head.
+- If it sits wrong, adjust ONLY:
+  Handle > HatAttachment > Position
+- Do NOT scale the mesh anymore. Scale is locked.
+
+UGC / AVATAR ITEM VALIDATION:
+- Accessory type: Hat
+- Name: The Snap Back
+- Suggested description:
+  A premium lobster-claw snapback from Clawdia's Claw Machine. Deep red shell, dark claw tips, and arcade-ready style.
+- Keep description Roblox-native. Do NOT mention crypto, tokens, cash-out, investment, or real-world value.
+- If Roblox asks for category/type, choose Hat / Head accessory.
+
+PUBLISH FLOW OPTIONS:
+Option A — Through Studio:
+- Select the Accessory object named The Snap Back.
+- Use Avatar/Marketplace/Publish flow available in your Studio account.
+- Run validation if prompted.
+- Upload as avatar item / hat accessory.
+
+Option B — Through Creator Dashboard:
+- Go to Creator Dashboard > Creations > Avatar Items / Development Items.
+- Upload/import the accessory or publish from Studio if Dashboard asks for Studio validation.
+
+FINAL BEFORE SUBMIT:
+- Thumbnail/preview looks good.
+- Texture visible, not gray.
+- Handle.Color is white.
+- No extra imported duplicate mesh parts.
+- Accessory contains exactly one Handle mesh.
+- No Robux/crypto/cash-out language.

@@ -1,0 +1,12 @@
+# Blender 5.1.1 MTL File: 'snap_back_v11_LOCKED_TEXTURE.blend'
+# www.blender.org
+
+newmtl SnapBack_v11_BakedTexture
+Ns 462.399994
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd snap_back_v11_LOCKED_lobster_texture.png

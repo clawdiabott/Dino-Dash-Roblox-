@@ -1,0 +1,30 @@
+GRASS GOBBLER COW CONTEST — PUBLISHING STEPS
+
+Build is ready:
+D:\Openclaw\GRASS_GOBBLER_COW_CONTEST\build\Grass-Gobbler-Cow-Contest.rbxlx
+
+Marketing art:
+D:\Openclaw\GRASS_GOBBLER_COW_CONTEST\assets\marketing\UPLOAD_GAME_ICON_512.png
+D:\Openclaw\GRASS_GOBBLER_COW_CONTEST\assets\marketing\UPLOAD_THUMBNAIL_1920x1080.png
+
+To publish as a NEW experience:
+1) In Roblox Creator Dashboard, create a new blank experience/place under the ClawdiaOS community.
+2) Copy the new Universe ID and Place ID.
+3) Run:
+
+powershell -ExecutionPolicy Bypass -File D:\Openclaw\GRASS_GOBBLER_COW_CONTEST\publish-grass-gobbler.ps1 -PlaceId YOUR_PLACE_ID -UniverseId YOUR_UNIVERSE_ID
+
+4) Type PUBLISH when prompted.
+5) Upload the icon/thumbnail in Creator Dashboard.
+
+Do NOT publish this over Clawdia's Claw Machine unless that is explicitly intended.
+
+Recommended title:
+Grass Gobbler Cow Contest
+
+Description:
+Become a hungry cow and race the clock in a chaotic farm-wide grass eating contest.
+
+You start with 60 seconds. Every patch of grass you eat adds score and time. The more you eat, the bigger your multiplier gets — but the field can run dry if you waste your route.
+
+Can you keep the timer alive forever?

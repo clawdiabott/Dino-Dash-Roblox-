@@ -1,0 +1,937 @@
+<roblox version="4">
+  <Item class="Lighting" referent="0">
+    <Properties>
+      <string name="Name">Lighting</string>
+      <Color3 name="Ambient">
+        <R>120</R>
+        <G>140</G>
+        <B>120</B>
+      </Color3>
+      <float name="Brightness">2.5</float>
+      <float name="ClockTime">14</float>
+      <Color3 name="OutdoorAmbient">
+        <R>160</R>
+        <G>180</G>
+        <B>160</B>
+      </Color3>
+    </Properties>
+  </Item>
+  <Item class="ServerScriptService" referent="1">
+    <Properties>
+      <string name="Name">ServerScriptService</string>
+    </Properties>
+    <Item class="Script" referent="2">
+      <Properties>
+        <string name="Name">Main</string>
+        <token name="RunContext">0</token>
+        <string name="Source"><![CDATA[-- Grass Gobbler Cow Contest
+-- Server-authoritative grass eating contest prototype.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+
+local ARENA_SIZE = 190
+local START_TIME = 60
+local MAX_TIME = 240
+local GRASS_COUNT = 340
+local GRASS_RESPAWN_INTERVAL = 2.5
+local GRASS_RESPAWN_BATCH = 10
+local BASE_TIME_GAIN = 0.45
+local SCORE_PER_GRASS = 1
+local COWHAT_PRICE_GRASS = 49
+local FIELD_COLOR = Color3.fromRGB(42, 142, 46)
+
+local remotes = Instance.new("Folder")
+remotes.Name = "GrassGobblerRemotes"
+remotes.Parent = ReplicatedStorage
+
+local updateRemote = Instance.new("RemoteEvent")
+updateRemote.Name = "UpdateHUD"
+updateRemote.Parent = remotes
+
+local eventRemote = Instance.new("RemoteEvent")
+eventRemote.Name = "GameEvent"
+eventRemote.Parent = remotes
+
+local cowhatRemote = Instance.new("RemoteEvent")
+cowhatRemote.Name = "CowhatShop"
+cowhatRemote.Parent = remotes
+
+local rng = Random.new()
+local grassFolder = Instance.new("Folder")
+grassFolder.Name = "GrassPatches"
+grassFolder.Parent = workspace
+
+local playerState = {}
+local activeGrass = {}
+local function makeCowhatPart(name, size, cframe, color, material, parent)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.CFrame = cframe
+	part.Color = color
+	part.Material = material or Enum.Material.SmoothPlastic
+	part.Anchored = false
+	part.CanCollide = false
+	part.CanTouch = false
+	part.Massless = true
+	part.Parent = parent
+	return part
+end
+
+local function equipHayhaloCowhat(character)
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	local old = character:FindFirstChild("HayhaloCowhat")
+	if old then old:Destroy() end
+
+	local hat = Instance.new("Model")
+	hat.Name = "HayhaloCowhat"
+	hat.Parent = character
+
+	local function weld(part)
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = root
+		w.Part1 = part
+		w.Parent = part
+	end
+
+	-- Signature silhouette: a straw halo/cowboy brim floating over the cow suit.
+	local brim = makeCowhatPart("StrawHaloBrim", Vector3.new(5.6, 0.28, 4.35), root.CFrame * CFrame.new(0, 3.22, -3.85), Color3.fromRGB(222, 177, 86), Enum.Material.WoodPlanks, hat)
+	local brimMesh = Instance.new("SpecialMesh")
+	brimMesh.MeshType = Enum.MeshType.Sphere
+	brimMesh.Scale = Vector3.new(1, 0.08, 0.78)
+	brimMesh.Parent = brim
+	weld(brim)
+
+	local crown = makeCowhatPart("MilkCloudCrown", Vector3.new(2.7, 1.25, 2.25), root.CFrame * CFrame.new(0, 3.82, -3.85), Color3.fromRGB(250, 248, 229), Enum.Material.SmoothPlastic, hat)
+	local crownMesh = Instance.new("SpecialMesh")
+	crownMesh.MeshType = Enum.MeshType.Sphere
+	crownMesh.Scale = Vector3.new(1, 0.72, 0.88)
+	crownMesh.Parent = crown
+	weld(crown)
+
+	for _, sx in ipairs({-1, 1}) do
+		local horn = makeCowhatPart("TinyGoldHorn", Vector3.new(0.36, 1.0, 0.36), root.CFrame * CFrame.new(sx * 1.35, 4.1, -3.98) * CFrame.Angles(0, 0, math.rad(24 * sx)), Color3.fromRGB(255, 218, 86), Enum.Material.Neon, hat)
+		weld(horn)
+	end
+
+	local tuft = makeCowhatPart("GoldenGrassTuft", Vector3.new(0.5, 1.65, 0.5), root.CFrame * CFrame.new(0, 4.62, -3.85) * CFrame.Angles(math.rad(8), 0, math.rad(20)), Color3.fromRGB(111, 255, 83), Enum.Material.Neon, hat)
+	weld(tuft)
+	for i = 1, 5 do
+		local blade = makeCowhatPart("GlowGrassBlade" .. i, Vector3.new(0.16, 1.55 + i * 0.08, 0.16), root.CFrame * CFrame.new((i - 3) * 0.18, 4.72, -3.85 + (i % 2) * 0.08) * CFrame.Angles(math.rad(12 + i * 3), 0, math.rad((i - 3) * 13)), Color3.fromRGB(82, 235, 67), Enum.Material.Neon, hat)
+		weld(blade)
+	end
+
+	local bell = makeCowhatPart("MiniCowbell", Vector3.new(0.82, 0.74, 0.38), root.CFrame * CFrame.new(0, 2.82, -5.35), Color3.fromRGB(255, 205, 73), Enum.Material.Metal, hat)
+	weld(bell)
+end
+
+local function makePart(name, size, cframe, color, material, parent)
+	local part = Instance.new("Part")
+	part.Name = name
+	part.Size = size
+	part.CFrame = cframe
+	part.Color = color
+	part.Material = material or Enum.Material.SmoothPlastic
+	part.Anchored = true
+	part.CanCollide = true
+	part.TopSurface = Enum.SurfaceType.Smooth
+	part.BottomSurface = Enum.SurfaceType.Smooth
+	part.Parent = parent or workspace
+	return part
+end
+
+local function clearGeneratedFarm()
+	for _, name in ipairs({
+		"GrassPatches",
+		"FarmField",
+		"Barn",
+		"BarnRoof",
+		"WaterTrough",
+		"GoldenGrassZone",
+		"CowSpawn",
+		"SpawnLocation",
+		"NorthFenceRail",
+		"SouthFenceRail",
+		"WestFenceRail",
+		"EastFenceRail",
+	}) do
+		local inst = workspace:FindFirstChild(name)
+		if inst then inst:Destroy() end
+	end
+
+	for _, inst in ipairs(workspace:GetChildren()) do
+		if inst.Name == "FencePost" then
+			inst:Destroy()
+		end
+	end
+end
+
+local function buildFarm()
+	clearGeneratedFarm()
+	grassFolder = Instance.new("Folder")
+	grassFolder.Name = "GrassPatches"
+	grassFolder.Parent = workspace
+
+	local field = makePart("FarmField", Vector3.new(ARENA_SIZE, 4, ARENA_SIZE), CFrame.new(0, -2, 0), FIELD_COLOR, Enum.Material.SmoothPlastic)
+	field.CanCollide = true
+	field.CastShadow = false
+	makePart("Barn", Vector3.new(32, 28, 24), CFrame.new(-74, 14, -70), Color3.fromRGB(190, 46, 36), Enum.Material.Wood)
+	makePart("BarnRoof", Vector3.new(38, 8, 30), CFrame.new(-74, 31, -70) * CFrame.Angles(0, 0, math.rad(8)), Color3.fromRGB(95, 34, 28), Enum.Material.Wood)
+	makePart("WaterTrough", Vector3.new(26, 4, 10), CFrame.new(60, 2, -70), Color3.fromRGB(75, 110, 145), Enum.Material.Metal)
+	makePart("GoldenGrassZone", Vector3.new(36, 0.25, 36), CFrame.new(62, 0.03, 62), Color3.fromRGB(188, 166, 54), Enum.Material.Grass)
+
+	-- Fence posts and rails.
+	for x = -ARENA_SIZE/2, ARENA_SIZE/2, 12 do
+		makePart("FencePost", Vector3.new(1.8, 8, 1.8), CFrame.new(x, 4, -ARENA_SIZE/2), Color3.fromRGB(112, 70, 38), Enum.Material.Wood)
+		makePart("FencePost", Vector3.new(1.8, 8, 1.8), CFrame.new(x, 4, ARENA_SIZE/2), Color3.fromRGB(112, 70, 38), Enum.Material.Wood)
+	end
+	for z = -ARENA_SIZE/2, ARENA_SIZE/2, 12 do
+		makePart("FencePost", Vector3.new(1.8, 8, 1.8), CFrame.new(-ARENA_SIZE/2, 4, z), Color3.fromRGB(112, 70, 38), Enum.Material.Wood)
+		makePart("FencePost", Vector3.new(1.8, 8, 1.8), CFrame.new(ARENA_SIZE/2, 4, z), Color3.fromRGB(112, 70, 38), Enum.Material.Wood)
+	end
+	makePart("NorthFenceRail", Vector3.new(ARENA_SIZE, 2, 1.2), CFrame.new(0, 5, -ARENA_SIZE/2), Color3.fromRGB(126, 79, 43), Enum.Material.Wood)
+	makePart("SouthFenceRail", Vector3.new(ARENA_SIZE, 2, 1.2), CFrame.new(0, 5, ARENA_SIZE/2), Color3.fromRGB(126, 79, 43), Enum.Material.Wood)
+	makePart("WestFenceRail", Vector3.new(1.2, 2, ARENA_SIZE), CFrame.new(-ARENA_SIZE/2, 5, 0), Color3.fromRGB(126, 79, 43), Enum.Material.Wood)
+	makePart("EastFenceRail", Vector3.new(1.2, 2, ARENA_SIZE), CFrame.new(ARENA_SIZE/2, 5, 0), Color3.fromRGB(126, 79, 43), Enum.Material.Wood)
+
+	-- Spawn pad. Keep it small/green so it never washes out the player's camera view.
+	local pad = makePart("CowSpawn", Vector3.new(8, 0.35, 8), CFrame.new(0, 0.12, 0), Color3.fromRGB(126, 205, 86), Enum.Material.Grass)
+	pad.Transparency = 0.18
+	local spawn = Instance.new("SpawnLocation")
+	spawn.Name = "SpawnLocation"
+	spawn.Size = Vector3.new(6, 0.35, 6)
+	spawn.CFrame = CFrame.new(0, 1.2, 0)
+	spawn.Color = Color3.fromRGB(126, 205, 86)
+	spawn.Transparency = 0.75
+	spawn.Anchored = true
+	spawn.Neutral = true
+	spawn.Parent = workspace
+end
+
+local function randomGrassPosition()
+	local margin = 14
+	return Vector3.new(
+		rng:NextNumber(-ARENA_SIZE/2 + margin, ARENA_SIZE/2 - margin),
+		1.1,
+		rng:NextNumber(-ARENA_SIZE/2 + margin, ARENA_SIZE/2 - margin)
+	)
+end
+
+local function getMultiplier(score)
+	return 1 + math.floor(score / 20) * 0.25
+end
+
+local function sendHUD(player)
+	local state = playerState[player]
+	if not state then return end
+	updateRemote:FireClient(player, {
+		timeLeft = math.max(0, state.timeLeft),
+		score = state.score,
+		multiplier = getMultiplier(state.score),
+		grassRemaining = #activeGrass,
+		best = state.best,
+		active = state.active,
+	})
+end
+
+local function eatGrass(player, grass)
+	local state = playerState[player]
+	if not state or not state.active or not grass or not grass.Parent then return end
+	if grass:GetAttribute("Eaten") then return end
+	grass:SetAttribute("Eaten", true)
+
+	local multiplier = getMultiplier(state.score)
+	local bonus = grass:GetAttribute("Golden") and 3 or 1
+	local scoreGain = SCORE_PER_GRASS * bonus
+	local timeGain = BASE_TIME_GAIN * multiplier * bonus
+
+	state.score += scoreGain
+	state.timeLeft = math.min(MAX_TIME, state.timeLeft + timeGain)
+	state.best = math.max(state.best, state.score)
+
+	for i, g in ipairs(activeGrass) do
+		if g == grass then
+			table.remove(activeGrass, i)
+			break
+		end
+	end
+
+	eventRemote:FireClient(player, {
+		kind = "eat",
+		scoreGain = scoreGain,
+		timeGain = timeGain,
+		multiplier = multiplier,
+		golden = grass:GetAttribute("Golden") == true,
+	})
+	grass:Destroy()
+	sendHUD(player)
+end
+
+local function spawnGrass(position, golden)
+	local grass = Instance.new("Part")
+	grass.Name = golden and "GoldenGrass" or "Grass"
+	grass.Size = golden and Vector3.new(3, 1.2, 3) or Vector3.new(rng:NextNumber(1.5, 2.8), rng:NextNumber(0.8, 1.8), rng:NextNumber(1.5, 2.8))
+	grass.CFrame = CFrame.new(position) * CFrame.Angles(0, rng:NextNumber(0, math.pi), 0)
+	grass.Color = golden and Color3.fromRGB(255, 216, 58) or Color3.fromRGB(rng:NextInteger(38, 74), rng:NextInteger(160, 230), rng:NextInteger(44, 86))
+	grass.Material = golden and Enum.Material.Neon or Enum.Material.Grass
+	grass.Anchored = true
+	grass.CanCollide = false
+	grass.CanTouch = true
+	grass:SetAttribute("Golden", golden == true)
+	grass.Parent = grassFolder
+
+	local prompt = Instance.new("BillboardGui")
+	prompt.Name = "GrassGlow"
+	prompt.Size = UDim2.fromOffset(golden and 80 or 34, golden and 26 or 14)
+	prompt.StudsOffset = Vector3.new(0, 2, 0)
+	prompt.AlwaysOnTop = false
+	prompt.Enabled = golden == true
+	prompt.Parent = grass
+	local label = Instance.new("TextLabel")
+	label.Size = UDim2.fromScale(1, 1)
+	label.BackgroundTransparency = 1
+	label.Text = golden and "+BONUS" or ""
+	label.TextColor3 = Color3.fromRGB(255, 245, 110)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBlack
+	label.Parent = prompt
+
+	grass.Touched:Connect(function(hit)
+		local character = hit:FindFirstAncestorOfClass("Model")
+		if not character then return end
+		local player = Players:GetPlayerFromCharacter(character)
+		if player then
+			eatGrass(player, grass)
+		end
+	end)
+
+	table.insert(activeGrass, grass)
+	return grass
+end
+
+local function fillGrass(count)
+	for _ = 1, count do
+		local pos = randomGrassPosition()
+		local golden = rng:NextNumber() < 0.055
+		spawnGrass(pos, golden)
+	end
+end
+
+local function attachCowVisual(character)
+	local root = character:WaitForChild("HumanoidRootPart", 10)
+	local humanoid = character:WaitForChild("Humanoid", 10)
+	if not root or not humanoid then return end
+	humanoid.WalkSpeed = 20
+	humanoid.JumpPower = 42
+
+	-- Lightweight cow avatar treatment.
+	-- IMPORTANT: Do not wrap the player in a large physical cow shell. Large white body meshes
+	-- can sit between the camera and map, making the whole play area look white.
+	local palette = {
+		Head = Color3.fromRGB(245, 245, 235),
+		UpperTorso = Color3.fromRGB(245, 245, 235),
+		LowerTorso = Color3.fromRGB(245, 245, 235),
+		Torso = Color3.fromRGB(245, 245, 235),
+		LeftUpperArm = Color3.fromRGB(35, 35, 32),
+		RightUpperArm = Color3.fromRGB(35, 35, 32),
+		LeftLowerLeg = Color3.fromRGB(35, 35, 32),
+		RightLowerLeg = Color3.fromRGB(35, 35, 32),
+		LeftLeg = Color3.fromRGB(35, 35, 32),
+		RightLeg = Color3.fromRGB(35, 35, 32),
+	}
+
+	for _, inst in ipairs(character:GetDescendants()) do
+		if inst:IsA("BasePart") then
+			inst.Transparency = 0
+			if palette[inst.Name] then
+				inst.Color = palette[inst.Name]
+			end
+		elseif inst:IsA("Decal") and inst.Name == "face" then
+			inst.Transparency = 0
+		end
+	end
+
+	local head = character:FindFirstChild("Head") or root
+	local old = character:FindFirstChild("CowLite")
+	if old then old:Destroy() end
+
+	local cowLite = Instance.new("Model")
+	cowLite.Name = "CowLite"
+	cowLite.Parent = character
+
+	local function addSmallPart(name, size, offset, color, material)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Size = size
+		part.Color = color
+		part.Material = material or Enum.Material.SmoothPlastic
+		part.CanCollide = false
+		part.CanTouch = false
+		part.CanQuery = false
+		part.Massless = true
+		part.CFrame = head.CFrame * offset
+		part.Parent = cowLite
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0 = head
+		weld.Part1 = part
+		weld.Parent = part
+		return part
+	end
+
+	addSmallPart("LeftCowHorn", Vector3.new(0.22, 0.75, 0.22), CFrame.new(-0.42, 0.65, -0.08) * CFrame.Angles(0, 0, math.rad(-18)), Color3.fromRGB(235, 220, 170))
+	addSmallPart("RightCowHorn", Vector3.new(0.22, 0.75, 0.22), CFrame.new(0.42, 0.65, -0.08) * CFrame.Angles(0, 0, math.rad(18)), Color3.fromRGB(235, 220, 170))
+	addSmallPart("LeftCowEar", Vector3.new(0.42, 0.18, 0.56), CFrame.new(-0.72, 0.35, 0), Color3.fromRGB(35, 35, 32))
+	addSmallPart("RightCowEar", Vector3.new(0.42, 0.18, 0.56), CFrame.new(0.72, 0.35, 0), Color3.fromRGB(35, 35, 32))
+end
+local function setupPlayer(player)
+	local leaderstats = Instance.new("Folder")
+	leaderstats.Name = "leaderstats"
+	leaderstats.Parent = player
+	local grassStat = Instance.new("IntValue")
+	grassStat.Name = "Grass"
+	grassStat.Parent = leaderstats
+	local bestStat = Instance.new("IntValue")
+	bestStat.Name = "Best"
+	bestStat.Parent = leaderstats
+
+	playerState[player] = {
+		timeLeft = START_TIME,
+		score = 0,
+		best = 0,
+		active = true,
+		lastHud = 0,
+		cowhatOwned = false,
+		cowhatEquipped = false,
+	}
+
+	player.CharacterAdded:Connect(function(character)
+		task.wait(0.2)
+		attachCowVisual(character)
+		local state = playerState[player]
+		if state and state.cowhatEquipped then
+			equipHayhaloCowhat(character)
+		end
+		local root = character:FindFirstChild("HumanoidRootPart")
+		if root then
+			root.CFrame = CFrame.new(0, 5, 0)
+		end
+	end)
+
+	-- If Studio has not spawned the character yet, force a normal load after the farm exists.
+	if not player.Character then
+		task.defer(function()
+			if player.Parent and not player.Character then
+				player:LoadCharacter()
+			end
+		end)
+	end
+end
+
+local function setPlayerMovement(player, enabled)
+	local character = player.Character
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		humanoid.WalkSpeed = enabled and 20 or 0
+		humanoid.JumpPower = enabled and 42 or 0
+	end
+end
+
+local function resetContest(player)
+	local state = playerState[player]
+	if not state then return end
+	state.timeLeft = START_TIME
+	state.score = 0
+	state.active = true
+	setPlayerMovement(player, true)
+	local stats = player:FindFirstChild("leaderstats")
+	if stats then
+		stats.Grass.Value = 0
+	end
+	eventRemote:FireClient(player, {kind = "restart"})	sendHUD(player)
+end
+
+local function sendCowhatState(player, message)
+	local state = playerState[player]
+	if not state then return end
+	cowhatRemote:FireClient(player, {
+		price = COWHAT_PRICE_GRASS,
+		owned = state.cowhatOwned,
+		equipped = state.cowhatEquipped,
+		score = state.score,
+		message = message,
+	})
+end
+
+eventRemote.OnServerEvent:Connect(function(player, action)
+	if action == "restartRun" then
+		resetContest(player)
+	end
+end)
+
+cowhatRemote.OnServerEvent:Connect(function(player, action)
+	local state = playerState[player]
+	if not state then return end
+	if action == "buy" then
+		if state.cowhatOwned then
+			state.cowhatEquipped = true
+		elseif state.score >= COWHAT_PRICE_GRASS then
+			state.score -= COWHAT_PRICE_GRASS
+			state.cowhatOwned = true
+			state.cowhatEquipped = true
+			local stats = player:FindFirstChild("leaderstats")
+			if stats then stats.Grass.Value = state.score end
+			eventRemote:FireClient(player, {kind = "cowhatPurchased"})
+		else
+			sendCowhatState(player, "Need " .. tostring(COWHAT_PRICE_GRASS - state.score) .. " more grass")
+			return
+		end
+	elseif action == "equip" then
+		if state.cowhatOwned then state.cowhatEquipped = true end
+	elseif action == "unequip" then
+		state.cowhatEquipped = false
+		local character = player.Character
+		local old = character and character:FindFirstChild("HayhaloCowhat")
+		if old then old:Destroy() end
+		sendCowhatState(player, "Cowhat hidden")
+		return
+	else
+		sendCowhatState(player, nil)
+		return
+	end
+
+	if state.cowhatEquipped and player.Character then
+		equipHayhaloCowhat(player.Character)
+	end
+	sendCowhatState(player, state.cowhatOwned and "Hayhalo Cowhat equipped" or nil)
+	sendHUD(player)
+end)
+
+local function buildEmergencyFarm(reason)
+	warn("Grass Gobbler fallback farm active", reason)
+	if not workspace:FindFirstChild("FarmField") then
+		local field = makePart("FarmField", Vector3.new(ARENA_SIZE, 4, ARENA_SIZE), CFrame.new(0, -2, 0), FIELD_COLOR, Enum.Material.SmoothPlastic)
+		field.CanCollide = true
+		field.CastShadow = false
+	end
+	if not workspace:FindFirstChild("SpawnLocation") then
+		local spawn = Instance.new("SpawnLocation")
+		spawn.Name = "SpawnLocation"
+		spawn.Size = Vector3.new(6, 0.35, 6)
+		spawn.CFrame = CFrame.new(0, 2, 0)
+		spawn.Color = Color3.fromRGB(126, 205, 86)
+		spawn.Transparency = 0.75
+		spawn.Anchored = true
+		spawn.Neutral = true
+		spawn.Parent = workspace
+	end
+	if not grassFolder or not grassFolder.Parent then
+		grassFolder = Instance.new("Folder")
+		grassFolder.Name = "GrassPatches"
+		grassFolder.Parent = workspace
+	end
+end
+
+local farmOk, farmErr = pcall(buildFarm)
+if not farmOk then
+	buildEmergencyFarm(farmErr)
+end
+
+local grassOk, grassErr = pcall(function()
+	fillGrass(GRASS_COUNT)
+end)
+if not grassOk then
+	warn("Grass Gobbler grass spawn failed", grassErr)
+	buildEmergencyFarm(grassErr)
+end
+
+local function handlePlayer(player)
+	if playerState[player] then
+		return
+	end
+	setupPlayer(player)
+	task.defer(function()
+		sendCowhatState(player, nil)
+	end)
+end
+
+Players.PlayerAdded:Connect(handlePlayer)
+
+-- In Studio/local servers, the test player can exist before this script reaches PlayerAdded.
+-- Handle already-connected players so the farm/cow spawn is never skipped.
+for _, player in ipairs(Players:GetPlayers()) do
+	task.spawn(handlePlayer, player)
+end
+
+Players.PlayerRemoving:Connect(function(player)
+	playerState[player] = nil
+end)
+
+-- Grass regrowth: field can run out, but slowly regrows so smart routing matters.
+task.spawn(function()
+	while true do
+		task.wait(GRASS_RESPAWN_INTERVAL)
+		if #activeGrass < GRASS_COUNT then
+			fillGrass(math.min(GRASS_RESPAWN_BATCH, GRASS_COUNT - #activeGrass))
+		end
+	end
+end)
+
+local integrityTimer = 0
+
+local function ensureArenaIntegrity()
+	local field = workspace:FindFirstChild("FarmField")
+	if field and field:IsA("BasePart") then
+		field.Color = FIELD_COLOR
+		field.Material = Enum.Material.SmoothPlastic
+		field.Transparency = 0
+		field.CanCollide = true
+		field.CastShadow = false
+	end
+end
+
+RunService.Heartbeat:Connect(function(dt)
+	integrityTimer += dt
+	if integrityTimer >= 0.5 then
+		integrityTimer = 0
+		ensureArenaIntegrity()
+	end
+
+	for player, state in pairs(playerState) do
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if root and root.Position.Y < 2 then
+			root.AssemblyLinearVelocity = Vector3.zero
+			root.CFrame = CFrame.new(root.Position.X, 7, root.Position.Z)
+		end
+		if state.active then
+			state.timeLeft -= dt
+			if state.timeLeft <= 0 then
+				state.timeLeft = 0
+				state.active = false
+				setPlayerMovement(player, false)
+				eventRemote:FireClient(player, {kind = "gameover", score = state.score, best = state.best})
+			end
+
+			local stats = player:FindFirstChild("leaderstats")
+			if stats then
+				stats.Grass.Value = state.score
+				stats.Best.Value = state.best
+			end
+		end
+
+		state.lastHud += dt
+		if state.lastHud >= 0.25 then
+			state.lastHud = 0
+			sendHUD(player)
+		end
+	end
+end)
+
+
+
+]]></string>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="3">
+    <Properties>
+      <string name="Name">StarterPlayer</string>
+    </Properties>
+    <Item class="StarterPlayerScripts" referent="4">
+      <Properties>
+        <string name="Name">StarterPlayerScripts</string>
+      </Properties>
+      <Item class="LocalScript" referent="5">
+        <Properties>
+          <string name="Name">Client</string>
+          <string name="Source"><![CDATA[-- Grass Gobbler Cow Contest client HUD/effects.
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local remotes = ReplicatedStorage:WaitForChild("GrassGobblerRemotes")
+local updateRemote = remotes:WaitForChild("UpdateHUD")
+local eventRemote = remotes:WaitForChild("GameEvent")
+local cowhatRemote = remotes:WaitForChild("CowhatShop")
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "GrassGobblerHUD"
+gui.ResetOnSpawn = false
+gui.Parent = player:WaitForChild("PlayerGui")
+
+local function makeLabel(name, text, size, position, bg, fg)
+	local label = Instance.new("TextLabel")
+	label.Name = name
+	label.Size = size
+	label.Position = position
+	label.BackgroundColor3 = bg or Color3.fromRGB(25, 35, 22)
+	label.BackgroundTransparency = 0.08
+	label.BorderSizePixel = 0
+	label.Text = text
+	label.TextColor3 = fg or Color3.fromRGB(255, 255, 255)
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBlack
+	label.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 14)
+	corner.Parent = label
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(80, 255, 95)
+	stroke.Thickness = 2
+	stroke.Transparency = 0.25
+	stroke.Parent = label
+	return label
+end
+
+local title = makeLabel("Title", "🐄 GRASS GOBBLER", UDim2.fromOffset(430, 54), UDim2.new(0.5, -215, 0, 16), Color3.fromRGB(40, 80, 35), Color3.fromRGB(245, 255, 230))
+local timer = makeLabel("Timer", "60.0s", UDim2.fromOffset(210, 70), UDim2.new(0.5, -105, 0, 82), Color3.fromRGB(28, 36, 28), Color3.fromRGB(255, 250, 120))
+local score = makeLabel("Score", "Grass: 0", UDim2.fromOffset(250, 56), UDim2.new(0, 22, 0, 26), Color3.fromRGB(26, 55, 22))
+local mult = makeLabel("Multiplier", "x1.00", UDim2.fromOffset(210, 56), UDim2.new(0, 22, 0, 92), Color3.fromRGB(32, 48, 24), Color3.fromRGB(120, 255, 130))
+local field = makeLabel("Field", "Field: 0", UDim2.fromOffset(230, 50), UDim2.new(1, -252, 0, 28), Color3.fromRGB(40, 42, 26), Color3.fromRGB(230, 255, 180))
+local best = makeLabel("Best", "Best: 0", UDim2.fromOffset(230, 50), UDim2.new(1, -252, 0, 86), Color3.fromRGB(45, 35, 55), Color3.fromRGB(255, 230, 255))
+
+local cowhatButton = Instance.new("TextButton")
+cowhatButton.Name = "CowhatButton"
+cowhatButton.Size = UDim2.fromOffset(275, 58)
+cowhatButton.Position = UDim2.new(1, -297, 0, 146)
+cowhatButton.BackgroundColor3 = Color3.fromRGB(255, 218, 86)
+cowhatButton.BackgroundTransparency = 0.02
+cowhatButton.BorderSizePixel = 0
+cowhatButton.Text = "🌾 Hayhalo Cowhat — 49 grass"
+cowhatButton.TextColor3 = Color3.fromRGB(45, 31, 0)
+cowhatButton.TextScaled = true
+cowhatButton.Font = Enum.Font.GothamBlack
+cowhatButton.Parent = gui
+local cowhatCorner = Instance.new("UICorner")
+cowhatCorner.CornerRadius = UDim.new(0, 16)
+cowhatCorner.Parent = cowhatButton
+local cowhatStroke = Instance.new("UIStroke")
+cowhatStroke.Color = Color3.fromRGB(255, 255, 180)
+cowhatStroke.Thickness = 3
+cowhatStroke.Transparency = 0.15
+cowhatStroke.Parent = cowhatButton
+
+local help = makeLabel("Help", "Eat grass to add time. More grass = bigger time multiplier. If the field runs low, route smarter!", UDim2.new(0.82, 0, 0, 46), UDim2.new(0.09, 0, 1, -72), Color3.fromRGB(20, 26, 20), Color3.fromRGB(235, 255, 235))
+help.Font = Enum.Font.GothamBold
+
+local toast = makeLabel("Toast", "+grass", UDim2.fromOffset(320, 62), UDim2.new(0.5, -160, 0.43, 0), Color3.fromRGB(255, 239, 64), Color3.fromRGB(32, 28, 0))
+toast.Visible = false
+
+local restartButton = Instance.new("TextButton")
+restartButton.Name = "RestartRunButton"
+restartButton.Size = UDim2.fromOffset(300, 64)
+restartButton.Position = UDim2.new(0.5, -150, 0.56, 0)
+restartButton.BackgroundColor3 = Color3.fromRGB(255, 95, 75)
+restartButton.BorderSizePixel = 0
+restartButton.Text = "RESTART RUN"
+restartButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+restartButton.TextScaled = true
+restartButton.Font = Enum.Font.GothamBlack
+restartButton.Visible = false
+restartButton.Parent = gui
+local restartCorner = Instance.new("UICorner")
+restartCorner.CornerRadius = UDim.new(0, 16)
+restartCorner.Parent = restartButton
+local restartStroke = Instance.new("UIStroke")
+restartStroke.Color = Color3.fromRGB(255, 230, 210)
+restartStroke.Thickness = 3
+restartStroke.Parent = restartButton
+
+local debugLabel = makeLabel("DebugProbe", "debug", UDim2.fromOffset(520, 44), UDim2.new(0, 22, 1, -124), Color3.fromRGB(10, 10, 10), Color3.fromRGB(255, 255, 255))
+debugLabel.TextScaled = false
+debugLabel.TextSize = 14
+debugLabel.Font = Enum.Font.Code
+debugLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local cowhatOwned = false
+local cowhatEquipped = false
+local cowhatPrice = 49
+
+local function updateCowhatButton()
+	if cowhatOwned and cowhatEquipped then
+		cowhatButton.Text = "🌾 Hayhalo equipped"
+		cowhatButton.BackgroundColor3 = Color3.fromRGB(115, 255, 140)
+	elseif cowhatOwned then
+		cowhatButton.Text = "🌾 Equip Hayhalo Cowhat"
+		cowhatButton.BackgroundColor3 = Color3.fromRGB(145, 225, 255)
+	else
+		cowhatButton.Text = "🌾 Hayhalo Cowhat — " .. tostring(cowhatPrice) .. " grass"
+		cowhatButton.BackgroundColor3 = Color3.fromRGB(255, 218, 86)
+	end
+end
+
+local function popToast(text, color)
+	toast.Text = text
+	toast.TextColor3 = Color3.fromRGB(30, 30, 20)
+	toast.BackgroundColor3 = color or Color3.fromRGB(255, 239, 64)
+	toast.Visible = true
+	toast.Size = UDim2.fromOffset(260, 48)
+	toast.Position = UDim2.new(0.5, -130, 0.46, 0)
+	TweenService:Create(toast, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+		Size = UDim2.fromOffset(360, 72),
+		Position = UDim2.new(0.5, -180, 0.42, 0),
+	}):Play()
+	task.delay(0.55, function()
+		if toast then
+			TweenService:Create(toast, TweenInfo.new(0.24), {BackgroundTransparency = 1, TextTransparency = 1}):Play()
+			task.wait(0.25)
+			toast.Visible = false
+			toast.BackgroundTransparency = 0.08
+			toast.TextTransparency = 0
+		end
+	end)
+end
+
+updateRemote.OnClientEvent:Connect(function(data)
+	timer.Text = string.format("%.1fs", tonumber(data.timeLeft) or 0)
+	score.Text = "Grass: " .. tostring(data.score or 0)
+	mult.Text = string.format("x%.2f", tonumber(data.multiplier) or 1)
+	field.Text = "Field: " .. tostring(data.grassRemaining or 0)
+	best.Text = "Best: " .. tostring(data.best or 0)
+
+	local timeLeft = tonumber(data.timeLeft) or 0
+	if timeLeft < 10 then
+		timer.TextColor3 = Color3.fromRGB(255, 80, 80)
+	elseif timeLeft > 90 then
+		timer.TextColor3 = Color3.fromRGB(115, 255, 140)
+	else
+		timer.TextColor3 = Color3.fromRGB(255, 250, 120)
+	end
+end)
+
+cowhatButton.MouseButton1Click:Connect(function()
+	if cowhatOwned and cowhatEquipped then
+		cowhatRemote:FireServer("unequip")
+	elseif cowhatOwned then
+		cowhatRemote:FireServer("equip")
+	else
+		cowhatRemote:FireServer("buy")
+	end
+end)
+
+cowhatRemote.OnClientEvent:Connect(function(data)
+	cowhatPrice = tonumber(data.price) or cowhatPrice
+	cowhatOwned = data.owned == true
+	cowhatEquipped = data.equipped == true
+	updateCowhatButton()
+	if data.message then
+		popToast(tostring(data.message), Color3.fromRGB(255, 230, 120))
+	end
+end)
+
+updateCowhatButton()
+cowhatRemote:FireServer("state")
+
+restartButton.MouseButton1Click:Connect(function()
+	restartButton.Visible = false
+	eventRemote:FireServer("restartRun")
+end)
+
+eventRemote.OnClientEvent:Connect(function(data)
+	if data.kind == "eat" then
+		local timeGain = tonumber(data.timeGain) or 0
+		local scoreGain = tonumber(data.scoreGain) or 1
+		if data.golden then
+			popToast(string.format("GOLDEN GRASS! +%d / +%.1fs", scoreGain, timeGain), Color3.fromRGB(255, 220, 50))
+		else
+			popToast(string.format("+%d grass  +%.1fs", scoreGain, timeGain), Color3.fromRGB(120, 255, 105))
+		end
+	elseif data.kind == "gameover" then
+		popToast("TIME! Score: " .. tostring(data.score or 0), Color3.fromRGB(255, 80, 80))
+		restartButton.Visible = true
+	elseif data.kind == "restart" then
+		restartButton.Visible = false
+		popToast("New run! Eat fast!", Color3.fromRGB(120, 220, 255))
+	elseif data.kind == "cowhatPurchased" then
+		popToast("Hayhalo Cowhat unlocked!", Color3.fromRGB(255, 218, 86))
+	end
+end)
+
+local currentCharacter = nil
+
+local function makeLocalCameraSafe(character)
+	local function hideFromOwner(inst)
+		if inst:IsA("BasePart") then
+			-- Local-only. Prevents the owner's camera from clipping into white avatar/cosmetic geometry.
+			-- Other players still see the character/cosmetics normally.
+			inst.LocalTransparencyModifier = 1
+			inst.CanQuery = false
+		elseif inst:IsA("Decal") then
+			inst.LocalTransparencyModifier = 1
+		end
+	end
+
+	for _, inst in ipairs(character:GetDescendants()) do
+		hideFromOwner(inst)
+	end
+	character.DescendantAdded:Connect(function(inst)
+		task.defer(function()
+			hideFromOwner(inst)
+		end)
+	end)
+end
+
+local function setupGameCamera(character)
+	currentCharacter = character
+	player.CameraMinZoomDistance = 24
+	player.CameraMaxZoomDistance = 90
+	task.wait(0.25)
+	makeLocalCameraSafe(character)
+	local camera = workspace.CurrentCamera
+	if camera then
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.FieldOfView = 68
+	end
+end
+
+-- Stable chase camera for Grass Gobbler. This avoids Roblox's default camera sitting inside
+-- the local cow/player model, which was making the whole play view turn white.
+local debugTimer = 0
+
+RunService.RenderStepped:Connect(function(dt)
+	local camera = workspace.CurrentCamera
+	local character = currentCharacter or player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not camera or not root then return end
+
+	local focus = root.Position + Vector3.new(0, 2.5, 0)
+	local cameraPosition = focus + Vector3.new(0, 42, 38)
+	camera.CameraType = Enum.CameraType.Scriptable
+	camera.CFrame = CFrame.lookAt(cameraPosition, focus)
+
+	debugTimer += dt
+	if debugTimer >= 0.35 then
+		debugTimer = 0
+		local farm = workspace:FindFirstChild("FarmField")
+		local farmInfo = "FarmField missing"
+		if farm and farm:IsA("BasePart") then
+			farmInfo = string.format("field rgb=%d,%d,%d y=%.1f mat=%s trans=%.2f coll=%s", math.floor(farm.Color.R * 255), math.floor(farm.Color.G * 255), math.floor(farm.Color.B * 255), farm.Position.Y, farm.Material.Name, farm.Transparency, tostring(farm.CanCollide))
+		end
+		debugLabel.Text = string.format("root y=%.1f cam y=%.1f | %s", root.Position.Y, camera.CFrame.Position.Y, farmInfo)
+	end
+end)
+
+player.CharacterAdded:Connect(setupGameCamera)
+
+if player.Character then
+	setupGameCamera(player.Character)
+end
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="Workspace" referent="6">
+    <Properties>
+      <string name="Name">Workspace</string>
+      <bool name="FilteringEnabled">true</bool>
+      <bool name="NeedsPivotMigration">false</bool>
+    </Properties>
+  </Item>
+</roblox>

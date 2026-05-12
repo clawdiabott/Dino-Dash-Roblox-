@@ -1,0 +1,140 @@
+{
+  "name": "Dino Dash",
+  "tree": {
+    "$className": "DataModel",
+    "Workspace": {
+      "$className": "Workspace",
+      "DinoDashStaticStarterValleyFallback": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [780, 16, 780],
+          "Position": [0, -5, 0],
+          "Color": [0.207843, 0.603922, 0.290196],
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticNestCaveBackWall": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [132, 46, 16],
+          "Position": [0, 24, -34],
+          "Color": [0.341176, 0.32549, 0.305882],
+          "Material": "Rock",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticNestCaveLeftWall": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [16, 38, 88],
+          "Position": [-58, 21, 4],
+          "Color": [0.341176, 0.32549, 0.305882],
+          "Material": "Rock",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticNestCaveRightWall": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [16, 38, 88],
+          "Position": [58, 21, 4],
+          "Color": [0.341176, 0.32549, 0.305882],
+          "Material": "Rock",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticStarterPathFallback": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [38, 1, 260],
+          "Position": [0, 6, 138],
+          "Color": [0.85098, 0.658824, 0.356863],
+          "Material": "Ground",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticStarterEggPedestal": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "Size": [34, 5, 34],
+          "Position": [0, 9, 78],
+          "Color": [0.470588, 0.207843, 0.058824],
+          "Material": "Wood",
+          "Shape": "Cylinder",
+          "Orientation": [0, 0, 90],
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticStarterEggVisible": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": false,
+          "Size": [16, 22, 16],
+          "Position": [0, 23, 78],
+          "Color": [0.980392, 0.980392, 0.823529],
+          "Material": "Neon",
+          "Shape": "Ball",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashStaticStarterEggArrow": {
+        "$className": "Part",
+        "$properties": {
+          "Anchored": true,
+          "CanCollide": false,
+          "Size": [44, 4, 12],
+          "Position": [0, 21, 50],
+          "Color": [0.980392, 0.8, 0.082353],
+          "Material": "Neon",
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      },
+      "DinoDashSpawn": {
+        "$className": "SpawnLocation",
+        "$properties": {
+          "Anchored": true,
+          "Size": [16, 1, 16],
+          "Position": [0, 9, 34],
+          "Color": [0.980392, 0.8, 0.082353],
+          "Neutral": true,
+          "Duration": 0,
+          "AllowTeamChangeOnTouch": false,
+          "TopSurface": "Smooth",
+          "BottomSurface": "Smooth"
+        }
+      }
+    },
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      }
+    }
+  }
+}
